@@ -27,6 +27,11 @@
 #include <alloca.h>
 /*#include <linux/time.h>*/
 #include <time.h>
+
+#include <linux/ioctl.h>
+#define __force
+#define __bitwise
+#define __user
 #include <sound/asound.h>
 #include "alsa-control.h"
 

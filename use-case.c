@@ -32,11 +32,18 @@
 #include <string.h>
 #include <fcntl.h>
 #include <ctype.h>
-#include <alsa/asoundlib.h>
 #include <pthread.h>
+#include <stdarg.h>
+#include <stdlib.h>
 
-#include "../include/use-case.h"
-#include "../include/iatomic.h"
+#include <linux/ioctl.h>
+#define __force
+#define __bitwise
+#define __user
+#include <sound/asound.h>
+
+#include "use-case.h"
+#include "alsa-shim.h"
 
 #define PRE_SEQ		0
 #define POST_SEQ		1
@@ -46,7 +53,9 @@
 #define MAX_NAME		64
 #define MAX_FILE		256
 #define MAX_BUF		256
+#ifndef ALSA_USE_CASE_DIR
 #define ALSA_USE_CASE_DIR	"/usr/share/alsa/ucm"
+#endif
 #define ARRAY_SIZE(x)		(sizeof(x)/sizeof(x[0]))
 #define VERB_NOT_INITIALISED	-1
 

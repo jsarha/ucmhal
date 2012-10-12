@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/ioctl.h>
+#include <stdlib.h>
 
 #include "alsa-control.h"
 

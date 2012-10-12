@@ -22,6 +22,11 @@
 #include <string.h>
 #include <time.h>
 /*#include <linux/time.h>*/
+
+#include <linux/ioctl.h>
+#define __force
+#define __bitwise
+#define __user
 #include <sound/asound.h>
 
 /* Typedefs for kernel structs.  See <sound/asound.h>
