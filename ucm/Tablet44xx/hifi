@@ -1,0 +1,153 @@
+# Use case Configuration for TI SDP4430 HiFi Music
+# By Liam Girdwood <lrg@slimlogic.co.uk>
+
+SectionVerb
+  	EnableSequence
+		'DL1 Media Playback Volume':1:120
+		'DL2 Media Playback Volume':1:120
+	EndSequence
+
+	DisableSequence
+		'DL1 Media Playback Volume':1:0
+		'DL2 Media Playback Volume':1:0
+	EndSequence
+
+	# QoS and ALSA PCMs
+	QoS HiFi
+	CapturePCM 0
+	PlaybackPCM 0
+
+EndSection
+
+SectionDevice
+	Name "Earphone"
+	Comment "SDP4430 Earphone"
+
+	EnableSequence
+		'DL1 Mixer Multimedia':1:1
+		'Sidetone Mixer Playback':1:1
+#		#'Earphone Driver Switch':1:1
+	EndSequence
+
+	DisableSequence
+#		#'Earphone Driver Switch':1:0
+		'Sidetone Mixer Playback':1:0
+		'DL1 Mixer Multimedia':1:0
+	EndSequence
+
+	MasterPlaybackVolume 'Earphone Playback Volume'
+
+EndSection
+
+SectionDevice
+	Name "Headset"
+	Comment "SDP4430 3.5mm Headset"
+	
+	EnableSequence
+		'DL1 Mixer Multimedia':1:1
+		'Sidetone Mixer Playback':1:1
+		'HS Right Playback':1:1
+		'HS Left Playback':1:1
+		'MUX_UL11':1:9
+		'MUX_UL10':1:10
+	EndSequence
+
+	DisableSequence
+		'DL1 Mixer Multimedia':1:0
+		'MUX_UL11':1:0
+		'MUX_UL10':1:0
+		'HS Right Playback':1:0
+		'HS Left Playback':1:0
+		'Sidetone Mixer Playback':1:0
+	EndSequence
+
+	MasterPlaybackVolume 'Headset Playback Volume'
+	MasterCaptureVolume 'Capture Volume'
+
+EndSection
+
+SectionDevice
+	Name "Handsfree"
+	Comment "SDP4430 Handsfree Speakers LS2 & LS3"
+	
+	EnableSequence
+		'DL2 Mixer Multimedia':1:1
+		'Sidetone Mixer Playback':1:1
+		'HF Right Playback':1:1
+		'HF Left Playback':1:1
+		'Handsfree Playback Volume':2:23,23
+		'MUX_UL11':1:9
+		'MUX_UL10':1:10
+	EndSequence
+
+	DisableSequence
+		'MUX_UL11':1:0
+		'MUX_UL10':1:0
+		'HF Right Playback':1:0
+		'HF Left Playback':1:0
+		'Sidetone Mixer Playback':1:0
+		'DL2 Mixer Multimedia':1:0
+	EndSequence
+
+	MasterPlaybackVolume 'Handsfree Playback Volume'
+	MasterCaptureVolume 'Capture Volume'
+
+EndSection
+
+SectionModifier
+	Name "USB"
+	Comment "Stereo USB output"
+	SupportedDevice "Headset"
+
+	EnableSequence
+		'DL2 Mixer Tones':1:1
+	EndSequence
+
+	DisableSequence
+		'DL2 Mixer Tones':1:0
+	EndSequence
+
+	PlaybackPCM 0
+	PlaybackCard 2
+EndSection
+
+# Handsfree Tone playback
+SectionModifier
+	Name "Play Tone"
+	Comment "Play tone to handsfree during music playback"
+	SupportedDevice "Handsfree"
+
+	EnableSequence
+		'DL2 Mixer Tones':1:1
+	EndSequence
+
+	DisableSequence
+		'DL2 Mixer Tones':1:0
+	EndSequence
+
+	PlaybackPCM 3
+	MasterPlaybackVolume 'DL2 Tones Playback Volume'
+EndSection
+
+# Headset Tone playback
+SectionModifier
+	Name "Play Tone"
+	Comment "Play tone to headset and handsfree during music playback"
+	SupportedDevice "Headset"
+
+	EnableSequence
+		'DL1 Mixer Tones':1:1
+		'DL2 Mixer Tones':1:1
+		'DL1 Tones Playback Volume':1:10
+	EndSequence
+
+	DisableSequence
+		'DL1 Tones Playback Volume':1:0
+		'DL1 Mixer Tones':1:0
+		'DL2 Mixer Tones':1:0
+	EndSequence
+
+	PlaybackPCM 3
+	MasterPlaybackVolume 'DL2 Tones Playback Volume'
+EndSection
+

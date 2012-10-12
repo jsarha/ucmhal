@@ -1,0 +1,131 @@
+# Example Use case verb section for Voice call blah
+# By Joe Blogs <joe@blogs.com>
+
+SectionVerb
+  	# enable and disable sequences are compulsory
+  	EnableSequence
+	EndSequence
+
+	DisableSequence
+	EndSequence
+
+	# Optional QoS and ALSA PCMs
+	QoS HiFi
+	CapturePCM 0
+	PlaybackPCM 0
+
+EndSection
+
+SectionDevice
+	Name "Headphones"
+	
+	EnableSequence
+		'DL1 Media Playback Volume':1:66
+		'Sidetone Mixer Playback':1:1
+		'HF Right Playback':1:1
+		'HF Left Playback':1:1
+	EndSequence
+
+	DisableSequence
+		'HF Right Playback':1:0
+		'HF Left Playback':1:0
+		'Sidetone Mixer Playback':1:0
+		'DL1 Media Playback Volume':1:33
+	EndSequence
+
+	MasterPlaybackVolume 'Headset Playback Volume'
+
+EndSection
+
+SectionDevice
+	Name "Headset"
+	
+	EnableSequence
+		'DL1 Media Playback Volume':1:66
+		'Sidetone Mixer Playback':1:1
+		'HS Right Playback':1:1
+		'HS Left Playback':1:1
+		'MUX_UL11':1:9
+		'MUX_UL10':1:10
+	EndSequence
+
+	DisableSequence
+		'MUX_UL11':1:0
+		'MUX_UL10':1:0
+		'HS Right Playback':1:0
+		'HS Left Playback':1:0
+		'Sidetone Mixer Playback':1:0
+		'DL1 Media Playback Volume':1:33
+	EndSequence
+
+	MasterPlaybackVolume 'Headset Playback Volume'
+	MasterCaptureVolume 'Headset Capture Volume'
+
+EndSection
+
+SectionDevice
+	Name "Handset"
+	
+	EnableSequence
+		'DL2 Media Playback Volume':1:66
+		'Sidetone Mixer Playback':1:1
+		'HF Right Playback':1:1
+		'HF Left Playback':1:1
+		'MUX_UL11':1:9
+		'MUX_UL10':1:10
+	EndSequence
+
+	DisableSequence
+		'MUX_UL11':1:0
+		'MUX_UL10':1:0
+		'HF Right Playback':1:0
+		'HF Left Playback':1:0
+		'Sidetone Mixer Playback':1:0
+		'DL2 Media Playback Volume':1:33
+	EndSequence
+
+	MasterPlaybackVolume 'Headset Playback Volume'
+	MasterCaptureVolume 'Headset Capture Volume'
+
+EndSection
+
+SectionModifier
+	Name "Play Tone"
+	Comment "Play tone to handset during music playback"
+	SupportedDevice "Handset"
+
+	EnableSequence
+		'DL2 Tones Playback Volume':1:10
+	EndSequence
+
+	DisableSequence
+		'DL2 Tones Playback Volume':1:0
+	EndSequence
+
+	PlaybackPCM 2
+	MasterPlaybackVolume 'Headset Playback Volume'
+EndSection
+
+SectionModifier
+	Name "Play Tone"
+	Comment "Play tone to headset and handset during music playback"
+	SupportedDevice "Headset"
+
+	EnableSequence
+		'DL2 Tones Playback Volume':1:10
+		'DL1 Tones Playback Volume':1:10
+		'HF Right Playback':1:1
+		'HF Left Playback':1:1
+	EndSequence
+
+	DisableSequence
+		'DL2 Tones Playback Volume':1:0
+		'DL1 Tones Playback Volume':1:0
+		'HF Right Playback':1:0
+		'HF Left Playback':1:0
+	EndSequence
+
+	PlaybackPCM 2
+	MasterPlaybackVolume 'Headset Playback Volume'
+EndSection
+
