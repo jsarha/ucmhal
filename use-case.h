@@ -252,7 +252,7 @@ int snd_use_case_disable_device(snd_use_case_mgr_t *uc_mgr, const char *device);
  * \return 0 = successful negative = error
  */
 int snd_use_case_switch_device(snd_use_case_mgr_t *uc_mgr,
-			const char *old, const char *new);
+			const char *old, const char *new_);
 
 
 /**
@@ -283,7 +283,7 @@ int snd_use_case_disable_modifier(snd_use_case_mgr_t *uc_mgr,
  * \return 0 = successful negative = error
  */
 int snd_use_case_switch_modifier(snd_use_case_mgr_t *uc_mgr,
-			const char *old, const char *new);
+			const char *old, const char *new_);
 
 /**
  * \brief Get device status for current use case verb
