@@ -4,12 +4,10 @@
 SectionVerb
   	EnableSequence
 		'DL1 Media Playback Volume':1:120
-		'DL2 Media Playback Volume':1:120
 	EndSequence
 
 	DisableSequence
 		'DL1 Media Playback Volume':1:0
-		'DL2 Media Playback Volume':1:0
 	EndSequence
 
 	# QoS and ALSA PCMs
@@ -46,8 +44,8 @@ SectionDevice
 	EnableSequence
 		'DL1 Mixer Multimedia':1:1
 		'Sidetone Mixer Playback':1:1
-		'HS Right Playback':1:1
-		'HS Left Playback':1:1
+		'Headset Right Playback':1:1
+		'Headset Left Playback':1:1
 		'MUX_UL11':1:9
 		'MUX_UL10':1:10
 	EndSequence
@@ -56,8 +54,8 @@ SectionDevice
 		'DL1 Mixer Multimedia':1:0
 		'MUX_UL11':1:0
 		'MUX_UL10':1:0
-		'HS Right Playback':1:0
-		'HS Left Playback':1:0
+		'Headset Right Playback':1:0
+		'Headset Left Playback':1:0
 		'Sidetone Mixer Playback':1:0
 	EndSequence
 
@@ -71,10 +69,10 @@ SectionDevice
 	Comment "SDP4430 Handsfree Speakers LS2 & LS3"
 	
 	EnableSequence
-		'DL2 Mixer Multimedia':1:1
+		'DL1 Mixer Multimedia':1:1
 		'Sidetone Mixer Playback':1:1
-		'HF Right Playback':1:1
-		'HF Left Playback':1:1
+		'Handsfree Right Playback':1:1
+		'Handsfree Left Playback':1:1
 		'Handsfree Playback Volume':2:23,23
 		'MUX_UL11':1:9
 		'MUX_UL10':1:10
@@ -83,10 +81,10 @@ SectionDevice
 	DisableSequence
 		'MUX_UL11':1:0
 		'MUX_UL10':1:0
-		'HF Right Playback':1:0
-		'HF Left Playback':1:0
+		'Handsfree Right Playback':1:0
+		'Handsfree Left Playback':1:0
 		'Sidetone Mixer Playback':1:0
-		'DL2 Mixer Multimedia':1:0
+		'DL1 Mixer Multimedia':1:0
 	EndSequence
 
 	MasterPlaybackVolume 'Handsfree Playback Volume'
@@ -100,11 +98,11 @@ SectionModifier
 	SupportedDevice "Headset"
 
 	EnableSequence
-		'DL2 Mixer Tones':1:1
+		'DL1 Mixer Tones':1:1
 	EndSequence
 
 	DisableSequence
-		'DL2 Mixer Tones':1:0
+		'DL1 Mixer Tones':1:0
 	EndSequence
 
 	PlaybackPCM 0
@@ -118,15 +116,15 @@ SectionModifier
 	SupportedDevice "Handsfree"
 
 	EnableSequence
-		'DL2 Mixer Tones':1:1
+		'DL1 Mixer Tones':1:1
 	EndSequence
 
 	DisableSequence
-		'DL2 Mixer Tones':1:0
+		'DL1 Mixer Tones':1:0
 	EndSequence
 
 	PlaybackPCM 3
-	MasterPlaybackVolume 'DL2 Tones Playback Volume'
+	MasterPlaybackVolume 'DL1 Tones Playback Volume'
 EndSection
 
 # Headset Tone playback
@@ -137,17 +135,15 @@ SectionModifier
 
 	EnableSequence
 		'DL1 Mixer Tones':1:1
-		'DL2 Mixer Tones':1:1
 		'DL1 Tones Playback Volume':1:10
 	EndSequence
 
 	DisableSequence
 		'DL1 Tones Playback Volume':1:0
 		'DL1 Mixer Tones':1:0
-		'DL2 Mixer Tones':1:0
 	EndSequence
 
 	PlaybackPCM 3
-	MasterPlaybackVolume 'DL2 Tones Playback Volume'
+	MasterPlaybackVolume 'DL1 Tones Playback Volume'
 EndSection
 

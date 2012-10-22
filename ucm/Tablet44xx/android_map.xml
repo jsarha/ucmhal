@@ -1,5 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <android_use_case_map>
+  <ucm_conf_name>OMAP5EVM</ucm_conf_name>
   <use_case_table>
     <row>
       <input>
