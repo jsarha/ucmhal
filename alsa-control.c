@@ -135,23 +135,28 @@ end:
 int ah_card_find_by_name(const char* name)
 {
 	char cur[256] = "";
-        int cards = ah_card_count();
-        int k;
-        int match = 0;
-	LOGE("%s() looking for %s", __func__, name);
-        for (k = 0 ; k < cards ; ++k) {
+	int cards = ah_card_count();
+	int k;
+	int match = 0;
+	if (1 == sscanf(name, "hw:%d", &k)) {
+		LOGD("Name '%s' refers to card %d", name, k);
+		return k;
+	}
+
+	LOGD("%s() looking for %s", __func__, name);
+	for (k = 0 ; k < cards ; ++k) {
 		ah_card_get_name(k, cur, sizeof(cur));
-		LOGE("Comparing to '%s'", cur);
+		LOGD("Comparing to '%s'", cur);
 		if ( 0 == strcmp(cur, name) ) {
 			match = 1;
 			break;
 		}
-        }
+	}
 
-        if (match)
+	if (match)
 		return k;
 
-        return -ENODEV;
+	return -ENODEV;
 }
 
 /* \brief Grabs the card info structure from the kernel.
@@ -204,4 +209,3 @@ int ah_control_close(int fd)
 {
 	return close(fd);
 }
-
