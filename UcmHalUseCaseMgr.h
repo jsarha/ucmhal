@@ -21,7 +21,6 @@
 #include <sys/types.h>
 #include <cutils/log.h>
 
-#include <use-case.h>
 #include <tinyxml.h>
 
 #include <list>
@@ -29,6 +28,8 @@
 #include <hardware/hardware.h>
 #include <system/audio.h>
 #include <hardware/audio.h>
+
+#include "use-case.h"
 
 #include "UcmHalMacroMap.h"
 #include "UcmHalTypes.h"

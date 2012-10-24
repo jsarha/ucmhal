@@ -40,6 +40,13 @@ int ucmhal_adev_open(const hw_module_t* module, const char* name,
 
 namespace UcmHal {
 
+static int adev_close(hw_device_t *device) {
+	Dev *dev = (Dev *) device;
+	LOGE("Closing audio device");
+	delete dev;
+	return 0;
+}
+
 static int adev_open_output_stream(audio_hw_device *dev,
                                    audio_io_handle_t handle,
 								   audio_devices_t devices,
@@ -112,13 +119,6 @@ static uint32_t adev_get_supported_devices(const audio_hw_device *dev) {
 	return ((const Dev *)dev)->get_supported_devices();
 }
 
-static int adev_close(hw_device_t *device) {
-	Dev *dev = (Dev *) device;
-	LOGE("Closing audio device");
-	delete dev;
-	return 0;
-}
-
 Dev::Dev(const hw_module_t* module, hw_device_t** device) : 
 	mUcm(mMM), mInitStatus(false), mMode(AUDIO_MODE_NORMAL) {
 	// C++ compiler does not allow direct assignment of function pointer members
@@ -149,6 +149,8 @@ Dev::Dev(const hw_module_t* module, hw_device_t** device) :
 
 	if (mUcm.loadConfiguration())
 		return;
+
+	pthread_mutex_init(&mLock, NULL);
 
 	mInitStatus = true;
 }

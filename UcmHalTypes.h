@@ -34,7 +34,7 @@ class UseCaseMgr;
 
 class AutoMutex {
 public:
-	inline AutoMutex(pthread_mutex_t mutex) : mMutex(&mutex) {
+	inline AutoMutex(pthread_mutex_t &mutex) : mMutex(&mutex) {
 		pthread_mutex_lock(mMutex);
 	}
 	inline AutoMutex(pthread_mutex_t *mutex) : mMutex(mutex) {

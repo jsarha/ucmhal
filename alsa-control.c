@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <sound/asound.h>
 

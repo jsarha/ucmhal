@@ -24,10 +24,10 @@
 #define LOGFUNC(...) (LOGV(__VA_ARGS__))
 #endif
 
-#define uh_assert_se(x) do { \
-	if (!(x)) \
-		LOGE("Assertion '%s' in %s() failed at %s:%d", \
-			 #x, __func__, __FILE__, __LINE__);	\
+#define uh_assert_se(x) do {								\
+		if (!(x))											\
+			LOGE("Assertion '%s' in %s() failed at %s:%d",	\
+				 #x, __func__, __FILE__, __LINE__);			\
 } while(0)
 
 #define uh_assert(x) uh_assert_se(x)

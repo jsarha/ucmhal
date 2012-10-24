@@ -24,7 +24,7 @@
 
 #include <system/audio.h>
 
-#include <UcmHalMacroMap.h>
+#include "UcmHalMacroMap.h"
 
 namespace UcmHal {
 

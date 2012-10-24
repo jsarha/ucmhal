@@ -135,13 +135,15 @@ OutStream::OutStream(Dev &dev,
     config->format = AUDIO_FORMAT_PCM_16_BIT;
     config->channel_mask = AUDIO_CHANNEL_OUT_STEREO;
     config->sample_rate = get_sample_rate();
+
+	pthread_mutex_init(&mLock, NULL);
 }
 
 OutStream::~OutStream() {
 }
 
 uint32_t OutStream::get_sample_rate() const {
-	return mConfig.rate;
+	return 44100;
 }
 
 int OutStream::set_sample_rate(uint32_t rate) {
@@ -288,6 +290,7 @@ int OutStream::startStream()
     LOGFUNC("%s(%p)", __FUNCTION__, this);
    
 	assert(mEntry != mUcm.noEntry());
+	mUcm.activateEntry(mEntry);
 	int card = mUcm.getPlaybackCard(mEntry);
 	int port = mUcm.getPlaybackPort(mEntry);
 

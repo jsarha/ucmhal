@@ -22,8 +22,8 @@
 #include <map>
 #include <utility>
 
-#include <UcmHalUseCaseMgr.h>
-#include <UcmHalMacro.h>
+#include "UcmHalUseCaseMgr.h"
+#include "UcmHalMacro.h"
 
 #include "alsa-control.h"
 
@@ -45,8 +45,8 @@ const string &UseCaseMapEntry::dump() {
 }
 
 UseCaseMgr::UseCaseMgr(MacroMap &mm) :
-	mucm(NULL), mMM(mm), mAllDevices(0),
-	mCard(-1), mActiveUseCaseCount(0) {
+	mucm(NULL), mMM(mm), mAllDevices(0), mCard(-1), mActiveUseCaseCount(0) {
+	pthread_mutex_init(&mLock, NULL);
 }
 
 UseCaseMgr::~UseCaseMgr() {
@@ -90,12 +90,12 @@ int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
 		return -1;
 	}
 	AutoMutex lock(mLock);
-	if (mActiveVerb == SND_USE_CASE_VERB_INACTIVE) {
-		uh_assert_se(snd_use_case_set_verb(mucm, i->mUcmVerb.c_str()));
+	if (mActiveVerb.empty() || mActiveVerb == SND_USE_CASE_VERB_INACTIVE) {
+		uh_assert_se(!snd_use_case_set_verb(mucm, i->mUcmVerb.c_str()));
 		// Only enable devices when enabling a verb
 		// TODO more complere support would maintain a union of devices from
 		//      active usecases.
-		uh_assert_se(snd_use_case_enable_device(mucm, i->mUcmDevice.c_str()));
+		uh_assert_se(!snd_use_case_enable_device(mucm, i->mUcmDevice.c_str()));
 	}
 	else if (mActiveVerb != i->mUcmVerb) {
 		LOGE("Request for conflicting verb '%s' current '%s'",
@@ -104,7 +104,7 @@ int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
 	}
 
 	if (!i->mUcmModifier.empty())
-		uh_assert_se(snd_use_case_enable_modifier(mucm, i->mUcmModifier.c_str()));
+		uh_assert_se(!snd_use_case_enable_modifier(mucm, i->mUcmModifier.c_str()));
 
 	mActiveUseCaseCount++;
 	mActiveVerb = i->mUcmVerb;
@@ -122,7 +122,7 @@ int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
 	uh_assert(mActiveUseCaseCount >= 0);
 	if (mActiveUseCaseCount == 0) {
 		// Last active entry, just setting verb to "Inactive" should be enough
-		uh_assert_se(snd_use_case_set_verb(mucm, SND_USE_CASE_VERB_INACTIVE));
+		uh_assert_se(!snd_use_case_set_verb(mucm, SND_USE_CASE_VERB_INACTIVE));
 		mActiveVerb = SND_USE_CASE_VERB_INACTIVE;
 	}
 	else {
@@ -130,7 +130,7 @@ int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
 		//      active usecases.
 		if (!i->mUcmModifier.empty())
 			uh_assert_se(
-				snd_use_case_disable_modifier(mucm, i->mUcmModifier.c_str()));
+				!snd_use_case_disable_modifier(mucm, i->mUcmModifier.c_str()));
 	}
 	return 0;
 }
