@@ -140,6 +140,7 @@ OutStream::OutStream(Dev &dev,
 }
 
 OutStream::~OutStream() {
+	pthread_mutex_destroy(&mLock);
 }
 
 uint32_t OutStream::get_sample_rate() const {

@@ -52,6 +52,7 @@ UseCaseMgr::UseCaseMgr(MacroMap &mm) :
 UseCaseMgr::~UseCaseMgr() {
 	if (mucm)
 		snd_use_case_mgr_close(mucm);
+	pthread_mutex_destroy(&mLock);
 }
 
 int UseCaseMgr::loadConfiguration() {

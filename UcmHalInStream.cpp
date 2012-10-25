@@ -114,6 +114,7 @@ InStream::InStream(Dev &dev,
 }
 
 InStream::~InStream() {
+	pthread_mutex_destroy(&mLock);
 }
 
 uint32_t InStream::get_sample_rate() const {
