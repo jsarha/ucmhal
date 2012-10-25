@@ -49,6 +49,5 @@ $(OBJECTS): $(HEADERS)
 
 install:
 	adb push ucmhaltest system/xbin
-	adb push ucm/Tablet44xx/Tablet44xx.conf system/usr/share/alsa/ucm/OMAP5EVM/OMAP5EVM.conf
-	adb push ucm/Tablet44xx/hifi system/usr/share/alsa/ucm/OMAP5EVM
-	adb push ucm/Tablet44xx/voice_call system/usr/share/alsa/ucm/OMAP5EVM
+	adb push ucm/OMAP5EVM system/usr/share/alsa/ucm/OMAP5EVM
+
