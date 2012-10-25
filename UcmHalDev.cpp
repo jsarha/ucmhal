@@ -19,18 +19,18 @@
 #include "UcmHalInStream.h"
 #include "UcmHalMacro.h"
 
-extern "C" 
+extern "C"
 int ucmhal_adev_open(const hw_module_t* module, const char* name,
 					 hw_device_t** device)
 {
-    if (strcmp(name, AUDIO_HARDWARE_INTERFACE) != 0)
-        return -EINVAL;
+	if (strcmp(name, AUDIO_HARDWARE_INTERFACE) != 0)
+		return -EINVAL;
 
 	UcmHal::Dev *dev = new UcmHal::Dev(module, device);
 
-	if (!dev) 
-        return -ENOMEM;
-	
+	if (!dev)
+		return -ENOMEM;
+
 	int ret = dev->init_check();
 	if (ret)
 		delete dev;
@@ -48,17 +48,17 @@ static int adev_close(hw_device_t *device) {
 }
 
 static int adev_open_output_stream(audio_hw_device *dev,
-                                   audio_io_handle_t handle,
+								   audio_io_handle_t handle,
 								   audio_devices_t devices,
 								   audio_output_flags_t flags,
 								   struct audio_config *config,
 								   struct audio_stream_out **stream_out) {
-	return ((Dev *)dev)->open_output_stream(handle, devices, flags, config, 
-	                                        stream_out);
+	return ((Dev *)dev)->open_output_stream(handle, devices, flags, config,
+											stream_out);
 }
 
 static void adev_close_output_stream(audio_hw_device *dev,
-                                     struct audio_stream_out *stream) {
+									 struct audio_stream_out *stream) {
 	((Dev *)dev)->close_output_stream(stream);
 }
 
@@ -95,11 +95,11 @@ static int adev_get_mic_mute(const audio_hw_device *dev, bool *state) {
 }
 
 static size_t adev_get_input_buffer_size(const audio_hw_device *dev,
-                                         const audio_config *config) {
+										 const audio_config *config) {
 	return ((const Dev *)dev)->get_input_buffer_size(config);
 }
 
-static int adev_open_input_stream(audio_hw_device *dev, 
+static int adev_open_input_stream(audio_hw_device *dev,
 								  audio_io_handle_t handle,
 								  audio_devices_t devices,
 								  struct audio_config *config,
@@ -119,32 +119,32 @@ static uint32_t adev_get_supported_devices(const audio_hw_device *dev) {
 	return ((const Dev *)dev)->get_supported_devices();
 }
 
-Dev::Dev(const hw_module_t* module, hw_device_t** device) : 
+Dev::Dev(const hw_module_t* module, hw_device_t** device) :
 	mUcm(mMM), mInitStatus(false), mMode(AUDIO_MODE_NORMAL) {
 	// C++ compiler does not allow direct assignment of function pointer members
-    audio_hw_device *hw_device = reinterpret_cast<audio_hw_device *>(this);
-    memset(hw_device, 0, sizeof(hw_device));
+	audio_hw_device *hw_device = reinterpret_cast<audio_hw_device *>(this);
+	memset(hw_device, 0, sizeof(hw_device));
 
-    common.tag = HARDWARE_DEVICE_TAG;
-    common.version = AUDIO_DEVICE_API_VERSION_CURRENT;
-    common.module = (struct hw_module_t *) module;
-    common.close = adev_close;
+	common.tag = HARDWARE_DEVICE_TAG;
+	common.version = AUDIO_DEVICE_API_VERSION_CURRENT;
+	common.module = (struct hw_module_t *) module;
+	common.close = adev_close;
 
 	hw_device->get_supported_devices = adev_get_supported_devices;
-    hw_device->init_check = adev_init_check;
-    hw_device->set_voice_volume = adev_set_voice_volume;
-    hw_device->set_master_volume = adev_set_master_volume;
-    hw_device->set_mode = adev_set_mode;
-    hw_device->set_mic_mute = adev_set_mic_mute;
-    hw_device->get_mic_mute = adev_get_mic_mute;
-    hw_device->set_parameters = adev_set_parameters;
-    hw_device->get_parameters = adev_get_parameters;
-    hw_device->get_input_buffer_size = adev_get_input_buffer_size;
-    hw_device->open_output_stream = adev_open_output_stream;
-    hw_device->close_output_stream = adev_close_output_stream;
-    hw_device->open_input_stream = adev_open_input_stream;
-    hw_device->close_input_stream = adev_close_input_stream;
-    hw_device->dump = adev_dump;
+	hw_device->init_check = adev_init_check;
+	hw_device->set_voice_volume = adev_set_voice_volume;
+	hw_device->set_master_volume = adev_set_master_volume;
+	hw_device->set_mode = adev_set_mode;
+	hw_device->set_mic_mute = adev_set_mic_mute;
+	hw_device->get_mic_mute = adev_get_mic_mute;
+	hw_device->set_parameters = adev_set_parameters;
+	hw_device->get_parameters = adev_get_parameters;
+	hw_device->get_input_buffer_size = adev_get_input_buffer_size;
+	hw_device->open_output_stream = adev_open_output_stream;
+	hw_device->close_output_stream = adev_close_output_stream;
+	hw_device->open_input_stream = adev_open_input_stream;
+	hw_device->close_input_stream = adev_close_input_stream;
+	hw_device->dump = adev_dump;
 	*device = &common;
 
 	if (mUcm.loadConfiguration())
@@ -165,11 +165,11 @@ int Dev::open_output_stream(audio_io_handle_t handle,
 							struct audio_stream_out **stream_out) {
 	AutoMutex lock(mLock);
 	OutStream *out = new OutStream(*this, mUcm, handle, devices, flags, config);
-    if (!out)
-	    return -ENOMEM;
-    *stream_out = reinterpret_cast<audio_stream_out *>(out);
-    mOutStreams.insert(out);
-    return 0;
+	if (!out)
+		return -ENOMEM;
+	*stream_out = reinterpret_cast<audio_stream_out *>(out);
+	mOutStreams.insert(out);
+	return 0;
 }
 
 void Dev::close_output_stream(struct audio_stream_out *stream) {
@@ -191,7 +191,7 @@ char * Dev::get_parameters(const char *keys) const {
 int Dev::init_check() const {
 	if (mInitStatus)
 		return 0;
-	return -EINVAL;	
+	return -EINVAL;
 }
 
 int Dev::set_voice_volume(float volume) {
@@ -224,8 +224,8 @@ int Dev::open_input_stream(audio_io_handle_t handle,
 						   struct audio_stream_in **stream_in) {
 	if (InStream::check_parameters(config)) {
 		LOGE("open_input_stream: Invalid input parameters (%dHz,%dch,0x08x)",
-		     config->sample_rate, popcount(config->channel_mask),
-		     config->format);
+			 config->sample_rate, popcount(config->channel_mask),
+			 config->format);
 		return -EINVAL;
 	}
 	AutoMutex lock(mLock);
@@ -234,7 +234,7 @@ int Dev::open_input_stream(audio_io_handle_t handle,
 		return -ENOMEM;
 	mInStreams.insert(in);
 	*stream_in = reinterpret_cast<audio_stream_in *>(in);
-    return 0;
+	return 0;
 }
 
 void Dev::close_input_stream(struct audio_stream_in *stream) {
@@ -253,4 +253,4 @@ int Dev::dump(int fd) const {
 	return 0;
 }
 
-}; // namespace UcmHal 
+}; // namespace UcmHal

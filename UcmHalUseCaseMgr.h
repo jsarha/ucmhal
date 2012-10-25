@@ -40,7 +40,7 @@ class UseCaseMapEntry {
 public:
 	UseCaseMapEntry() : mMode(0), mDevices(0), mDevicesMask(0), mActive(0) {}
 	int match(const int mode, const int devices) {
-		return (mode == mMode && 
+		return (mode == mMode &&
 				(mDevices & mDevicesMask) == (devices & mDevicesMask));
 	}
 	const string &dump();
@@ -59,17 +59,17 @@ private:
 typedef std::list<UseCaseMapEntry> uclist_t;
 
 /* TODO for optimization fill to below map as the matches are found
-struct usecase_map_key {
-	int mode;
-	int devices;
-}
-struct usecase_map_key_cmp {
-	bool operator()(const usecase_map_key &a,
-					const usecase_map_key &b) const {
-		return a.mode != b.mode ? a.mode < b.mode : a.devices < b.devices;
-	}
-};
-typedef std::map<usecase_map_key, uclist_t::iterator> ucmap_t;
+   struct usecase_map_key {
+   int mode;
+   int devices;
+   }
+   struct usecase_map_key_cmp {
+   bool operator()(const usecase_map_key &a,
+   const usecase_map_key &b) const {
+   return a.mode != b.mode ? a.mode < b.mode : a.devices < b.devices;
+   }
+   };
+   typedef std::map<usecase_map_key, uclist_t::iterator> ucmap_t;
 */
 
 class UseCaseMgr {
@@ -78,7 +78,7 @@ public:
 	~UseCaseMgr();
 
 	int loadConfiguration();
-	int findEntry(audio_mode_t mode, audio_devices_t devices, 
+	int findEntry(audio_mode_t mode, audio_devices_t devices,
 				  audio_output_flags_t flags, uclist_t::iterator &entry);
 	int activateEntry(const uclist_t::iterator &entry);
 	int deactivateEntry(const uclist_t::iterator &entry);
@@ -104,6 +104,6 @@ private:
 	int loadUseCaseMap(const char*);
 };
 
-}; // namespace UcmHal 
+}; // namespace UcmHal
 
 #endif // UCMHALUSECASEMGR_H

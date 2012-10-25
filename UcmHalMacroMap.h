@@ -48,6 +48,6 @@ private:
 	MacroMap_t mModeMacroMap;
 };
 
-}; // namespace UcmHal 
+}; // namespace UcmHal
 
 #endif /* UCMHALMACROMAP_H */

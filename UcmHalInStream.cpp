@@ -109,7 +109,7 @@ InStream::InStream(Dev &dev,
 	stream->get_input_frames_lost = in_get_input_frames_lost;
 
 	mConfig = *config;
-	
+
 	pthread_mutex_init(&mLock, NULL);
 }
 
@@ -194,30 +194,30 @@ int InStream::check_parameters(audio_config_t *config)
 {
 	uh_assert(config);
 
-    if (config->format != AUDIO_FORMAT_PCM_16_BIT) {
-        return -EINVAL;
-    }
+	if (config->format != AUDIO_FORMAT_PCM_16_BIT) {
+		return -EINVAL;
+	}
 
-    int channel_count = popcount(config->channel_mask);
-    if ((channel_count < 1) || (channel_count > 2)) {
-        return -EINVAL;
-    }
+	int channel_count = popcount(config->channel_mask);
+	if ((channel_count < 1) || (channel_count > 2)) {
+		return -EINVAL;
+	}
 
-    switch(config->sample_rate) {
-    case 8000:
-    case 11025:
-    case 16000:
-    case 22050:
-    case 24000:
-    case 32000:
-    case 44100:
-    case 48000:
-        break;
-    default:
-        return -EINVAL;
-    }
+	switch(config->sample_rate) {
+	case 8000:
+	case 11025:
+	case 16000:
+	case 22050:
+	case 24000:
+	case 32000:
+	case 44100:
+	case 48000:
+		break;
+	default:
+		return -EINVAL;
+	}
 
-    return 0;
+	return 0;
 }
 
 }; // namespace UcmHal

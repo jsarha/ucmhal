@@ -30,13 +30,13 @@
 namespace UcmHal {
 
 const string &UseCaseMapEntry::dump() {
-	if (!mDump.empty()) 
+	if (!mDump.empty())
 		return mDump;
 
 	char buf[1024];
-	snprintf(buf, sizeof(buf), 
+	snprintf(buf, sizeof(buf),
 			 "mode %d devices 0x%08x mask 0x%08x -> verb '%s' dev '%s' mod '%s'",
-			 mMode, mDevices, mDevicesMask, mUcmVerb.c_str(), 
+			 mMode, mDevices, mDevicesMask, mUcmVerb.c_str(),
 			 mUcmDevice.c_str(), mUcmModifier.c_str());
 
 	mDump = buf;
@@ -71,7 +71,7 @@ int UseCaseMgr::loadConfiguration() {
 	return 0;
 }
 
-int UseCaseMgr::findEntry(audio_mode_t mode, audio_devices_t devices, 
+int UseCaseMgr::findEntry(audio_mode_t mode, audio_devices_t devices,
 						  audio_output_flags_t flags, uclist_t::iterator &i) {
 	LOGD("mode 0x%08x dev 0x%08x flags 0x%08x", mode, devices, flags);
 
@@ -94,7 +94,7 @@ int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
 		uh_assert_se(!snd_use_case_set_verb(mucm, i->mUcmVerb.c_str()));
 		// Only enable devices when enabling a verb
 		// TODO more complere support would maintain a union of devices from
-		//      active usecases.
+		//		active usecases.
 		uh_assert_se(!snd_use_case_enable_device(mucm, i->mUcmDevice.c_str()));
 	}
 	else if (mActiveVerb != i->mUcmVerb) {
@@ -127,7 +127,7 @@ int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
 	}
 	else {
 		// TODO more complere support would maintain a union of devices from
-		//      active usecases.
+		//		active usecases.
 		if (!i->mUcmModifier.empty())
 			uh_assert_se(
 				!snd_use_case_disable_modifier(mucm, i->mUcmModifier.c_str()));
@@ -197,7 +197,7 @@ int UseCaseMgr::loadUseCaseMap(const char *file) {
 		t = in->FirstChildElement("devices");
 		entry.mDevices = 0;
 		for (flag = t->FirstChildElement("flag"); flag;
-		     flag = flag->NextSiblingElement("flag")) {
+			 flag = flag->NextSiblingElement("flag")) {
 			entry.mDevices |= mMM.device(flag->GetText());
 		}
 		mAllDevices |= entry.mDevices;
@@ -206,7 +206,7 @@ int UseCaseMgr::loadUseCaseMap(const char *file) {
 		t = in->FirstChildElement("devices_mask");
 		entry.mDevicesMask = 0;
 		for (flag = t->FirstChildElement("flag"); flag;
-		     flag = flag->NextSiblingElement("flag")) {
+			 flag = flag->NextSiblingElement("flag")) {
 			entry.mDevicesMask |= mMM.device(flag->GetText());
 		}
 

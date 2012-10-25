@@ -4,13 +4,13 @@
 # qemu.
 MYDROID = /home/oku/compile/android
 TINYALSA = /home/oku/compile/tinyalsa
-CSOURCES = use-case.c alsa-shim.c alsa-control.c audio_hw.c test/testmain.c 
+CSOURCES = use-case.c alsa-shim.c alsa-control.c audio_hw.c test/testmain.c
 CPPSOURCES = \
 	UcmHalDev.cpp \
 	UcmHalUseCaseMgr.cpp \
 	UcmHalMacroMap.cpp \
 	UcmHalOutStream.cpp \
-	UcmHalInStream.cpp 
+	UcmHalInStream.cpp
 HEADERS = \
 	use-case.h \
 	alsa-shim.h \
@@ -24,7 +24,7 @@ HEADERS = \
 	UcmHalMacro.h \
 	test/cutils/log.h
 OBJECTS = $(CPPSOURCES:.cpp=.o) $(CSOURCES:.c=.o)
-TINYALSAOBJS = $(TINYALSA)/pcm.o $(TINYALSA)/mixer.o 
+TINYALSAOBJS = $(TINYALSA)/pcm.o $(TINYALSA)/mixer.o
 CFLAGS = -O0 -g -Wall \
 		 -DOMAP_ENHANCEMENT \
 	  	 -DALSA_USE_CASE_DIR=\"/system/usr/share/alsa/ucm\" \
@@ -34,7 +34,7 @@ CFLAGS = -O0 -g -Wall \
 		 -I $(MYDROID)/hardware/libhardware/include
 
 ucmhaltest: $(OBJECTS)
-	g++ -o $@ $(CFLAGS) $(OBJECTS) $(TINYALSAOBJS) --static -ltinyxml -lpthread -ldl 
+	g++ -o $@ $(CFLAGS) $(OBJECTS) $(TINYALSAOBJS) --static -ltinyxml -lpthread -ldl
 
 %.o : %.cpp
 	g++ $(CFLAGS) -c -o $@ $<
@@ -45,9 +45,8 @@ ucmhaltest: $(OBJECTS)
 clean :
 	rm -f $(OBJECTS)
 
-$(OBJECTS): $(HEADERS) 
+$(OBJECTS): $(HEADERS)
 
 install:
 	adb push ucmhaltest system/xbin
 	adb push ucm/OMAP5EVM system/usr/share/alsa/ucm/OMAP5EVM
-

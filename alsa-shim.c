@@ -289,4 +289,3 @@ void snd_ctl_elem_value_set_integer64(snd_ctl_elem_value_t *obj, unsigned int id
 {
 	obj->value.integer64.value[idx] = val;
 }
-

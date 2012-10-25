@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *		http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,11 +43,11 @@ namespace UcmHal {
 class OutStream : public audio_stream_out {
 public:
 	OutStream(Dev &dev,
-	          UseCaseMgr &ucm,
-	          audio_io_handle_t handle,
-	          audio_devices_t devices,
-	          audio_output_flags_t flags,
-	          struct audio_config *config);
+			  UseCaseMgr &ucm,
+			  audio_io_handle_t handle,
+			  audio_devices_t devices,
+			  audio_output_flags_t flags,
+			  struct audio_config *config);
 	~OutStream();
 
 	uint32_t get_sample_rate() const;
