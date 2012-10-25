@@ -86,6 +86,7 @@ int UseCaseMgr::findEntry(audio_mode_t mode, audio_devices_t devices,
 }
 
 int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
+	LOGE("%s(%s)", __func__, i->dump().c_str());
 	if (i->mActive) {
 		LOGE("Entry %s already active", i->dump().c_str());
 		return -1;
@@ -114,6 +115,7 @@ int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
 }
 
 int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
+	LOGE("%s(%s)", __func__, i->dump().c_str());
 	if (!i->mActive) {
 		LOGE("Entry %s already inactive", i->dump().c_str());
 		return -1;
