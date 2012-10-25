@@ -142,6 +142,7 @@ int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
 				!snd_use_case_disable_modifier(mucm, i->mUcmModifier.c_str()));
 		}
 	}
+	i->mActive = 0;
 	return 0;
 }
 

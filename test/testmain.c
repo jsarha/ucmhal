@@ -26,30 +26,51 @@ int main(int argc, char *argv[]) {
 	}
 
 	if ((ret = ucmhal_adev_open(&dummy_module, dev_name, &dev))) {
-		fprintf(stderr, "ucmhal_adev_open returned %d \n", ret);		
+		fprintf(stderr, "ucmhal_adev_open returned %d \n", ret);
 		return -1;
 	}
 
 	{
 		audio_hw_device_t *adev = (audio_hw_device_t *) dev;
 		audio_io_handle_t handle = 0;
-		audio_devices_t devices = AUDIO_DEVICE_OUT_SPEAKER;
 		audio_output_flags_t flags = 0;
 		struct audio_config config = {
 			.sample_rate = 44100,
 			.channel_mask = AUDIO_DEVICE_OUT_ALL,
 			.format = AUDIO_FORMAT_PCM_SUB_16_BIT
 		};
-		struct audio_stream_out *stream_out;
+		struct audio_stream_out *stream_out_hf;
+		struct audio_stream_out *stream_out_hs;
+		char buf[1024];
+		fgets(buf, sizeof(buf), stdin);
+
 		if ((ret = adev->open_output_stream(
-				 adev, handle, devices, flags, &config, &stream_out))) {
-			fprintf(stderr, "open_input_stream returned %d \n", ret);		
+				 adev, handle, AUDIO_DEVICE_OUT_SPEAKER, flags, &config, &stream_out_hf))) {
+			fprintf(stderr, "open_input_stream returned %d \n", ret);
 			return -1;
 		}
 
-		play_sine(stream_out, 44100);
+		play_sine(stream_out_hf, 44100);
+		fgets(buf, sizeof(buf), stdin);
 
-		adev->close_output_stream(adev, stream_out);
+		stream_out_hf->common.standby(&stream_out_hf->common);
+
+		if ((ret = adev->open_output_stream(
+				 adev, handle, AUDIO_DEVICE_OUT_WIRED_HEADSET, flags, &config, &stream_out_hs))) {
+			fprintf(stderr, "open_input_stream returned %d \n", ret);
+			return -1;
+		}
+
+		fgets(buf, sizeof(buf), stdin);
+		play_sine(stream_out_hs, 44100);
+		fgets(buf, sizeof(buf), stdin);
+
+		adev->close_output_stream(adev, stream_out_hs);
+
+		play_sine(stream_out_hf, 44100);
+		fgets(buf, sizeof(buf), stdin);
+
+		adev->close_output_stream(adev, stream_out_hf);
 
 		dev->close(dev);
 	}
