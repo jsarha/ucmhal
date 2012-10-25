@@ -172,8 +172,12 @@ int OutStream::set_format(audio_format_t format) {
 }
 
 int OutStream::standby() {
-	//TODO
-	return 0;
+	int status;
+	LOGFUNC("%s(%p)", __FUNCTION__, this);
+	AutoMutex dLock(mDev.mLock);
+	AutoMutex sLock(mLock);
+	status = doStandBy();
+	return status;
 }
 
 int OutStream::dump(int fd) const {
@@ -271,7 +275,7 @@ exit:
 	if (ret == -EPIPE) {
 		/* Recover from an underrun */
 		LOGE("XRUN detected");
-		standBy();
+		standby();
 		goto do_over;
 	}
 
@@ -332,16 +336,6 @@ int OutStream::doStandBy()
 		mStandby = 1;
 	}
 	return 0;
-}
-
-int OutStream::standBy()
-{
-	int status;
-	LOGFUNC("%s(%p)", __FUNCTION__, this);
-	AutoMutex dLock(mDev.mLock);
-	AutoMutex sLock(mLock);
-	status = doStandBy();
-	return status;
 }
 
 }; // namespace UcmHal

@@ -83,7 +83,6 @@ private:
 
 	int startStream();
 	int doStandBy();
-	int standBy();
 };
 
 }; // namespace UcmHal
