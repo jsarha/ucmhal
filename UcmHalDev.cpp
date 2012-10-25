@@ -17,6 +17,7 @@
 #include "UcmHalDev.h"
 #include "UcmHalOutStream.h"
 #include "UcmHalInStream.h"
+#include "UcmHalMacro.h"
 
 extern "C" 
 int ucmhal_adev_open(const hw_module_t* module, const char* name,
@@ -160,20 +161,19 @@ int Dev::open_output_stream(audio_io_handle_t handle,
 							audio_output_flags_t flags,
 							struct audio_config *config,
 							struct audio_stream_out **stream_out) {
+	AutoMutex lock(mLock);
 	OutStream *out = new OutStream(*this, mUcm, handle, devices, flags, config);
-
     if (!out)
 	    return -ENOMEM;
-
     *stream_out = reinterpret_cast<audio_stream_out *>(out);
-
     mOutStreams.insert(out);
-
     return 0;
 }
 
 void Dev::close_output_stream(struct audio_stream_out *stream) {
+	AutoMutex lock(mLock);
 	OutStream *out = (OutStream *) stream;
+	uh_assert_se(1 == mOutStreams.erase(out));
 	delete out;
 }
 
@@ -182,12 +182,14 @@ int Dev::set_parameters(const char *kvpairs) {
 }
 
 char * Dev::get_parameters(const char *keys) const {
-	static char buf[] = { '\0' };
+	static char *buf = { '\0' };
 	return buf;
 }
 
 int Dev::init_check() const {
-	return -ENOSYS;
+	if (mInitStatus)
+		return 0;
+	return -EINVAL;	
 }
 
 int Dev::set_voice_volume(float volume) {
@@ -224,24 +226,24 @@ int Dev::open_input_stream(audio_io_handle_t handle,
 		     config->format);
 		return -EINVAL;
 	}
-
+	AutoMutex lock(mLock);
 	InStream *in = new InStream(*this, mUcm, handle, devices, config);
-
-    if (!in)
-	    return -ENOMEM;
-
-    *stream_in = reinterpret_cast<audio_stream_in *>(in);
-
-    mInStreams.insert(in);
-
+	if (!in)
+		return -ENOMEM;
+	mInStreams.insert(in);
+	*stream_in = reinterpret_cast<audio_stream_in *>(in);
     return 0;
 }
 
 void Dev::close_input_stream(struct audio_stream_in *stream) {
+	AutoMutex lock(mLock);
+	InStream *in = (InStream *) stream;
+	uh_assert_se(1 == mInStreams.erase(in));
+	delete in;
 }
 
 uint32_t Dev::get_supported_devices() const {
-	return 0;
+	return mUcm.getSupportedDeivices();
 }
 
 int Dev::dump(int fd) const {

@@ -23,13 +23,32 @@
 #include <utility>
 
 #include <UcmHalUseCaseMgr.h>
+#include <UcmHalMacro.h>
+
+#include "alsa-control.h"
 
 namespace UcmHal {
-	
-UseCaseMgr::UseCaseMgr(MacroMap &mm) : 
-	mucm(NULL), mMM(mm), mAllDevices(0) {
+
+const string &UseCaseMapEntry::dump() {
+	if (!mDump.empty()) 
+		return mDump;
+
+	char buf[1024];
+	snprintf(buf, sizeof(buf), 
+			 "mode %d devices 0x%08x mask 0x%08x -> verb '%s' dev '%s' mod '%s'",
+			 mMode, mDevices, mDevicesMask, mUcmVerb.c_str(), 
+			 mUcmDevice.c_str(), mUcmModifier.c_str());
+
+	mDump = buf;
+
+	return mDump;
 }
-	
+
+UseCaseMgr::UseCaseMgr(MacroMap &mm) :
+	mucm(NULL), mMM(mm), mAllDevices(0),
+	mCard(-1), mActiveUseCaseCount(0) {
+}
+
 UseCaseMgr::~UseCaseMgr() {
 	if (mucm)
 		snd_use_case_mgr_close(mucm);
@@ -38,38 +57,93 @@ UseCaseMgr::~UseCaseMgr() {
 int UseCaseMgr::loadConfiguration() {
 	static const char *map_file_name = ALSA_USE_CASE_DIR "/android_map.xml";
 
-	loadUseCaseMap(map_file_name);
+	if (loadUseCaseMap(map_file_name))
+		return -1;
 
-	mucm = snd_use_case_mgr_open(mUcmConfName);
+	mucm = snd_use_case_mgr_open(mUcmConfName.c_str());
+	if (mucm == NULL)
+		return -1;
 
-	// TODO validate configuration
+	// TODO validate map vs. ucm configuration
+	mCard = ah_card_find_by_name(mUcmConfName.c_str());
+	uh_assert(mCard >= 0);
 
 	return 0;
 }
 
-int UseCaseMgr::setUseCase(int mode, int devices) {
-	mapping request;
-	request.mode = mode;
-	request.devices = devices;
+int UseCaseMgr::findEntry(audio_mode_t mode, audio_devices_t devices, 
+						  audio_output_flags_t flags, uclist_t::iterator &i) {
+	LOGD("mode 0x%08x dev 0x%08x flags 0x%08x", mode, devices, flags);
 
-	LOGD("mode 0x%08x dev 0x%08x", mode, devices);
-
-	std::pair<ucmset_t::iterator, ucmset_t::iterator> range =
-		mUCMap.equal_range(request);
-
-	for (ucmset_t::iterator i=range.first; i != range.second; ++i) {
-		if ((i->devices & i->devices_mask) == (devices & i->devices_mask)) {
-			LOGD("Found: 0x%08x 0x%08x 0x%08x -> verb %s dev %s mod %s",
-			     i->ucm_verb.c_str(), i->ucm_device.c_str(),
-			     i->ucm_modifier.c_str());
-
-			snd_use_case_set_verb(mucm, i->ucm_verb.c_str());
-			snd_use_case_enable_device(mucm, i->ucm_device.c_str());
-			snd_use_case_enable_modifier(mucm, i->ucm_modifier.c_str());
+	for (i = mUCList.begin(); i != mUCList.end(); ++i) {
+		if (i->match(mode, devices)) {
+			LOGD("Found: %s (active: %d)", i->dump().c_str(), i->mActive);
 			return 0;
 		}
 	}
 	return -1;
+}
+
+int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
+	if (i->mActive) {
+		LOGE("Entry %s already active", i->dump().c_str());
+		return -1;
+	}
+	AutoMutex lock(mLock);
+	if (mActiveVerb == SND_USE_CASE_VERB_INACTIVE) {
+		uh_assert_se(snd_use_case_set_verb(mucm, i->mUcmVerb.c_str()));
+		// Only enable devices when enabling a verb
+		// TODO more complere support would maintain a union of devices from
+		//      active usecases.
+		uh_assert_se(snd_use_case_enable_device(mucm, i->mUcmDevice.c_str()));
+	}
+	else if (mActiveVerb != i->mUcmVerb) {
+		LOGE("Request for conflicting verb '%s' current '%s'",
+			 i->mUcmVerb.c_str(), mActiveVerb.c_str());
+		return -1;
+	}
+
+	if (!i->mUcmModifier.empty())
+		uh_assert_se(snd_use_case_enable_modifier(mucm, i->mUcmModifier.c_str()));
+
+	mActiveUseCaseCount++;
+	mActiveVerb = i->mUcmVerb;
+	i->mActive = 1;
+	return 0;
+}
+
+int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
+	if (!i->mActive) {
+		LOGE("Entry %s already inactive", i->dump().c_str());
+		return -1;
+	}
+	AutoMutex lock(mLock);
+	mActiveUseCaseCount--;
+	uh_assert(mActiveUseCaseCount >= 0);
+	if (mActiveUseCaseCount == 0) {
+		// Last active entry, just setting verb to "Inactive" should be enough
+		uh_assert_se(snd_use_case_set_verb(mucm, SND_USE_CASE_VERB_INACTIVE));
+		mActiveVerb = SND_USE_CASE_VERB_INACTIVE;
+	}
+	else {
+		// TODO more complere support would maintain a union of devices from
+		//      active usecases.
+		if (!i->mUcmModifier.empty())
+			uh_assert_se(
+				snd_use_case_disable_modifier(mucm, i->mUcmModifier.c_str()));
+	}
+	return 0;
+}
+
+int UseCaseMgr::getPlaybackCard(const uclist_t::iterator &i) {
+	return mCard;
+}
+
+int UseCaseMgr::getPlaybackPort(const uclist_t::iterator &i) {
+	if (i->mUcmModifier.empty()) {
+		return snd_use_case_get_verb_playback_pcm(mucm);
+	}
+	return snd_use_case_get_mod_playback_pcm(mucm, i->mUcmModifier.c_str());
 }
 
 int UseCaseMgr::loadUseCaseMap(const char *file) {
@@ -78,7 +152,7 @@ int UseCaseMgr::loadUseCaseMap(const char *file) {
 
 	LOGE("%s(file=%s)", __func__, file);
 
-	if (! xDoc.LoadFile(file) ) {
+	if (!xDoc.LoadFile(file)) {
 		LOGE("Could not open and parse file %s", file);
 		return 1;
 	}
@@ -94,9 +168,17 @@ int UseCaseMgr::loadUseCaseMap(const char *file) {
 		LOGE("Root element is not 'android_use_case_map'");
 		return 1;
 	}
-           
-	e = root->FirstChildElement("use_case_table");
 
+	e = root->FirstChildElement("ucm_conf_name");
+	if (!e) {
+		LOGE("Expected element <ucm_conf_name>");
+		return 1;
+	}
+	// TODO should be more efficient to call e->ValueStr() instead of e->GetText()
+	mUcmConfName = e->GetText();
+	LOGD("UCM conf name \"%s\"", mUcmConfName.c_str());
+
+	e = root->FirstChildElement("use_case_table");
 	if (!e) {
 		LOGE("Expected element <use_case_table>");
 		return 1;
@@ -105,55 +187,51 @@ int UseCaseMgr::loadUseCaseMap(const char *file) {
 	for (e = e->FirstChildElement("row"); e ;e = e->NextSiblingElement("row")) {
 		TiXmlElement *in, *out, *t, *flag;
 		const char* text;
-		mapping entry = { 0, 0, 0 };
-		
+		UseCaseMapEntry entry;
+
 		// Get mode
 		in = e->FirstChildElement("input");
-		entry.mode = mMM.mode(in->FirstChildElement("audio_mode")->GetText());
+		entry.mMode = mMM.mode(in->FirstChildElement("audio_mode")->GetText());
 
 		// Get devices
 		t = in->FirstChildElement("devices");
-		entry.devices = 0;
-		for (flag = t->FirstChildElement("flag"); flag; 
+		entry.mDevices = 0;
+		for (flag = t->FirstChildElement("flag"); flag;
 		     flag = flag->NextSiblingElement("flag")) {
-			entry.devices |= mMM.device(flag->GetText());
+			entry.mDevices |= mMM.device(flag->GetText());
 		}
-		mAllDevices |= entry.devices;
+		mAllDevices |= entry.mDevices;
 
 		// Get device mask
 		t = in->FirstChildElement("devices_mask");
-		entry.devices_mask = 0;
+		entry.mDevicesMask = 0;
 		for (flag = t->FirstChildElement("flag"); flag;
 		     flag = flag->NextSiblingElement("flag")) {
-			entry.devices_mask |= mMM.device(flag->GetText());
+			entry.mDevicesMask |= mMM.device(flag->GetText());
 		}
 
 		/* Outputs */
 		out = e->FirstChildElement("output");
 		text = out->FirstChildElement("verb")->GetText();
 		if (text) {
-			entry.ucm_verb = text;
+			entry.mUcmVerb = text;
 		}
 
 		text = out->FirstChildElement("device")->GetText();
 		if (text) {
-			entry.ucm_device = text; 
+			entry.mUcmDevice = text;
 		}
 
 		text = out->FirstChildElement("modifier")->GetText();
 		if (text) {
-			entry.ucm_modifier = text;
+			entry.mUcmModifier = text;
 		}
 
-		LOGV("adding {%d, %d, %d} => {%s, %s, %s} to map",
-		     entry.mode, entry.devices, entry.devices_mask,
-		     entry.ucm_verb.c_str(), entry.ucm_device.c_str(), 
-		     entry.ucm_modifier.c_str());
+		LOGV("adding %s to map", entry.dump().c_str());
 
-		mUCMap.insert(entry);
+		mUCList.push_back(entry);
 	}
 	return 0;
 }
 
-}; // namespace UcmHal 
-
+}; // namespace UcmHal

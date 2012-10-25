@@ -21,20 +21,55 @@
 #include <sys/types.h>
 #include <cutils/log.h>
 
-#include <string.h>
-#include <iostream>
-#include <set>
-#include <utility>
-#include <string>
-
 #include <use-case.h>
 #include <tinyxml.h>
 
+#include <list>
+
+#include <hardware/hardware.h>
+#include <system/audio.h>
+#include <hardware/audio.h>
+
 #include "UcmHalMacroMap.h"
+#include "UcmHalTypes.h"
 
 namespace UcmHal {
 
-typedef std::basic_string<char> string;
+class UseCaseMapEntry {
+public:
+	UseCaseMapEntry() : mMode(0), mDevices(0), mDevicesMask(0), mActive(0) {}
+	int match(const int mode, const int devices) {
+		return (mode == mMode && 
+				(mDevices & mDevicesMask) == (devices & mDevicesMask));
+	}
+	const string &dump();
+	friend class UseCaseMgr;
+private:
+	int mMode;
+	int mDevices;
+	int mDevicesMask;
+	string mUcmVerb;
+	string mUcmDevice;
+	string mUcmModifier;
+	bool mActive;
+	string mDump;
+};
+
+typedef std::list<UseCaseMapEntry> uclist_t;
+
+/* TODO for optimization fill to below map as the matches are found
+struct usecase_map_key {
+	int mode;
+	int devices;
+}
+struct usecase_map_key_cmp {
+	bool operator()(const usecase_map_key &a,
+					const usecase_map_key &b) const {
+		return a.mode != b.mode ? a.mode < b.mode : a.devices < b.devices;
+	}
+};
+typedef std::map<usecase_map_key, uclist_t::iterator> ucmap_t;
+*/
 
 class UseCaseMgr {
 public:
@@ -42,38 +77,28 @@ public:
 	~UseCaseMgr();
 
 	int loadConfiguration();
+	int findEntry(audio_mode_t mode, audio_devices_t devices, 
+				  audio_output_flags_t flags, uclist_t::iterator &entry);
+	int activateEntry(const uclist_t::iterator &entry);
+	int deactivateEntry(const uclist_t::iterator &entry);
 
-	int setUseCase(int mode, int devices);
-	int getSupportedDeivices() {
-		return mAllDevices;
-	}
+	int getPlaybackCard(const uclist_t::iterator &entry);
+	int getPlaybackPort(const uclist_t::iterator &entry);
+
+	int getSupportedDeivices() const { return mAllDevices; }
+	const uclist_t::const_iterator noEntry() const { return mUCList.end(); }
+
 private:
-	const char *mUcmConfName;
+	pthread_mutex_t mLock;
+	string mUcmConfName;
 	snd_use_case_mgr_t *mucm;
 	MacroMap &mMM;
 	int mAllDevices;
+	int mCard;
+	int mActiveUseCaseCount;
+	string mActiveVerb;
 
-	struct mapping {
-		int mode;
-		int devices;
-		int devices_mask; 
-		string ucm_verb;
-		string ucm_device;
-		string ucm_modifier; 
-	};
-
-	struct cmp {
-		bool operator()(const mapping &a, const mapping &b) const {
-			// For now, lets just sort according to mode
-			return a.mode < b.mode;
-			//return a.mode < b.mode ? true : a.devices < b.devices;
-		}
-	};
-
-	// TODO store pointer (or ref) instead of object to avoid heap trashing
-	// For current implementation just a list would do...
-	typedef std::multiset<mapping, cmp> ucmset_t;
-	ucmset_t mUCMap;
+	uclist_t mUCList;
 
 	int loadUseCaseMap(const char*);
 };

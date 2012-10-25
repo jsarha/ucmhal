@@ -15,6 +15,8 @@
  */
 
 #include "UcmHalOutStream.h"
+#include "UcmHalDev.h"
+#include "UcmHalMacro.h"
 
 namespace UcmHal {
 
@@ -115,8 +117,23 @@ OutStream::OutStream(Dev &dev,
     stream->write = out_write;
     stream->get_render_position = out_get_render_position;
 
-    config->format = get_format();
-    config->channel_mask = get_channels();
+	mUcm.findEntry(mDev.mMode, mDevices, mFlags, mEntry);
+	assert(mEntry != mUcm.noEntry());
+
+	mConfig.channels = 2;
+	mConfig.rate = DEFAULT_OUT_SAMPLING_RATE;
+	mConfig.period_size = LONG_PERIOD_SIZE;
+	mConfig.period_count = PLAYBACK_PERIOD_COUNT;
+	mConfig.format = PCM_FORMAT_S16_LE;
+	mConfig.start_threshold = 0;
+	mConfig.stop_threshold = 0;
+	mConfig.silence_threshold = 0;
+
+	mWriteThreshold = 0;
+	mPcm = NULL;
+
+    config->format = AUDIO_FORMAT_PCM_16_BIT;
+    config->channel_mask = AUDIO_CHANNEL_OUT_STEREO;
     config->sample_rate = get_sample_rate();
 }
 
@@ -124,7 +141,7 @@ OutStream::~OutStream() {
 }
 
 uint32_t OutStream::get_sample_rate() const {
-	return 44100;
+	return mConfig.rate;
 }
 
 int OutStream::set_sample_rate(uint32_t rate) {
@@ -189,13 +206,135 @@ int OutStream::set_volume(float left, float right) {
 }
 
 ssize_t OutStream::write(const void* buffer, size_t bytes) {
-	//TODO
-	return 0;
+    int ret;
+    size_t frame_size = audio_stream_frame_size(&common);
+    size_t out_frames = bytes / frame_size;
+    bool force_input_standby = false;
+    int kernel_frames;
+
+    LOGFUNC("%s(%p, %p, %d)", __FUNCTION__, this, buffer, bytes);
+
+do_over:
+    /* acquiring hw device mutex systematically is useful if a low priority thread is waiting
+     * on the output stream mutex - e.g. executing select_mode() while holding the hw device
+     * mutex
+     */
+	{
+		AutoMutex lock(mDev.mLock);
+		pthread_mutex_lock(&mLock);
+		if (mStandby) {
+			ret = startStream();
+			if (ret != 0)
+				goto exit;
+			/* a change in output device may change the microphone selection */
+			// TODO
+		}
+	}
+
+    /* do not allow more than out->write_threshold frames in kernel pcm driver buffer */
+    do {
+        struct timespec time_stamp;
+
+        if (pcm_get_htimestamp(mPcm, (unsigned int *)&kernel_frames, &time_stamp) < 0)
+            break;
+        kernel_frames = pcm_get_buffer_size(mPcm) - kernel_frames;
+        if (kernel_frames > mWriteThreshold) {
+            unsigned long time = (unsigned long)
+                    (((int64_t)(kernel_frames - mWriteThreshold) * 1000000) /
+                            MM_FULL_POWER_SAMPLING_RATE);
+            if (time < MIN_WRITE_SLEEP_US)
+                time = MIN_WRITE_SLEEP_US;
+            usleep(time);
+        }
+    } while (kernel_frames > mWriteThreshold);
+
+    ret = pcm_mmap_write(mPcm, buffer, out_frames * frame_size);
+
+exit:
+    if (ret != 0) {
+        unsigned int usecs = bytes * 1000000 / audio_stream_frame_size(&common) /
+            out_get_sample_rate(&common);
+        if (usecs >= 1000000L) {
+            usecs = 999999L;
+        }
+        usleep(usecs);
+    }
+
+    pthread_mutex_unlock(&mLock);
+
+    if (ret == -EPIPE) {
+	    /* Recover from an underrun */
+	    LOGE("XRUN detected");
+		standBy();
+	    goto do_over;
+    }
+
+    if (force_input_standby) {
+		// TODO
+		LOGE("force_input_standby not implemented");
+    }
+
+    return bytes;
 }
 
 int OutStream::get_render_position(uint32_t *dsp_frames) const {
 	//TODO
 	return 0;
+}
+
+/* must be called with hw device and output stream mutexes locked */
+int OutStream::startStream()
+{
+    LOGFUNC("%s(%p)", __FUNCTION__, this);
+   
+	assert(mEntry != mUcm.noEntry());
+	int card = mUcm.getPlaybackCard(mEntry);
+	int port = mUcm.getPlaybackPort(mEntry);
+
+    LOGE("setting playback card=%d port=%d", card, port);
+
+    /* default to low power:
+     *  NOTE: PCM_NOIRQ mode is required to dynamically scale avail_min
+     */
+    mWriteThreshold = PLAYBACK_PERIOD_COUNT * LONG_PERIOD_SIZE;
+    mConfig.start_threshold = SHORT_PERIOD_SIZE * 2;
+	// TODO avail_min is not available in my testenvironment
+    // mConfig.avail_min = LONG_PERIOD_SIZE,
+
+    mPcm = pcm_open(card, port, PCM_OUT | PCM_MMAP, &mConfig);
+
+    if (!pcm_is_ready(mPcm)) {
+        LOGE("cannot open pcm_out driver: %s", pcm_get_error(mPcm));
+        pcm_close(mPcm);
+		mPcm = NULL;
+        return -ENOMEM;
+    }
+
+	mStandby = 0;
+    return 0;
+}
+
+/* must be called with hw device and output stream mutexes locked */
+int OutStream::doStandby()
+{
+    LOGFUNC("%s(%p)", __FUNCTION__, this);
+    if (!mStandby) {
+        pcm_close(mPcm);
+        mPcm = NULL;
+		mUcm.deactivateEntry(mEntry);
+        mStandby = 1;
+    }
+    return 0;
+}
+
+int OutStream::standBy()
+{
+    int status;
+    LOGFUNC("%s(%p)", __FUNCTION__, this);
+	AutoMutex dLock(mDev.mLock);
+	AutoMutex sLock(mLock);
+    status = doStandby();
+    return status;
 }
 
 }; // namespace UcmHal

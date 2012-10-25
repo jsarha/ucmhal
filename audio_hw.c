@@ -16,19 +16,6 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "ucmhal"
-#define LOG_NDEBUG 0
-
-#include <errno.h>
-#include <pthread.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <sys/time.h>
-
-#include <cutils/log.h>
-#include <cutils/properties.h>
-#include <cutils/str_parms.h>
-
 #include <hardware/hardware.h>
 #include <system/audio.h>
 #include <hardware/audio.h>

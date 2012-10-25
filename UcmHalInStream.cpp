@@ -190,7 +190,7 @@ uint32_t InStream::get_input_frames_lost() {
 
 int InStream::check_parameters(audio_config_t *config)
 {
-	assert(config);
+	uh_assert(config);
 
     if (config->format != AUDIO_FORMAT_PCM_16_BIT) {
         return -EINVAL;

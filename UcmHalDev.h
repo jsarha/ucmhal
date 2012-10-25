@@ -20,44 +20,25 @@
 #define LOG_TAG "ucmhal"
 #define LOG_NDEBUG 0
 
-#include <stdint.h>
-#include <sys/types.h>
 #include <cutils/log.h>
-
-#include <string.h>
-#include <iostream>
-#include <map>
-#include <utility>
 
 #include <hardware/hardware.h>
 #include <system/audio.h>
 #include <hardware/audio.h>
 
 #include "UcmHalUseCaseMgr.h"
+#include "UcmHalTypes.h"
 
 namespace UcmHal {
 
 class OutStream;
 class InStream;
 
-class AutoMutex {
-public:
-	inline AutoMutex(pthread_mutex_t mutex) : mMutex(&mutex) {
-		pthread_mutex_lock(mMutex);
-	}
-	inline AutoMutex(pthread_mutex_t *mutex) : mMutex(mutex) {
-		pthread_mutex_lock(mMutex);
-	}
-	inline ~AutoMutex() { pthread_mutex_unlock(mMutex); }
-private:
-	pthread_mutex_t *mMutex;
-};
-
 class Dev : public audio_hw_device {
 public:
 	Dev(const hw_module_t* module, hw_device_t** device);
 	~Dev();
-
+	// Forward methods from audio_hw_device struct
 	int open_output_stream(audio_io_handle_t handle,
 						   audio_devices_t devices,
 						   audio_output_flags_t flags,
@@ -81,23 +62,17 @@ public:
 	uint32_t get_supported_devices() const;
 	int dump(int fd) const;
 
+	friend class OutStream;
+	friend class InStream;
 private:
 	pthread_mutex_t mLock;
 	MacroMap mMM;
 	UseCaseMgr mUcm;
 	bool mInitStatus;
-	int mMode;
+	audio_mode_t mMode;
 
-	template<typename T>
-	struct cmp {
-		bool operator()(const T *a, const T *b) const {
-			return (void *) a < (void *) b;
-		}
-	};
-
-	std::set<OutStream *, cmp<OutStream> > mOutStreams;
-	std::set<InStream *, cmp<InStream> > mInStreams;
-
+	OutStreamSet_t mOutStreams;
+	InStreamSet_t mInStreams;
 };
 
 }; // namespace UcmHal

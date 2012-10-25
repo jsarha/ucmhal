@@ -138,7 +138,7 @@ int ah_card_find_by_name(const char* name)
 	int cards = ah_card_count();
 	int k;
 	int match = 0;
-	if (1 == sscanf(name, "hw:%d", &k)) {
+	if (1 == sscanf(name, "hw:%d", &k) && k < cards) {
 		LOGD("Name '%s' refers to card %d", name, k);
 		return k;
 	}

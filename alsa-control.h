@@ -29,6 +29,10 @@
 #define __user
 #include <sound/asound.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Typedefs for kernel structs.  See <sound/asound.h>
  */
 typedef struct snd_ctl_card_info snd_ctl_card_info_t;
@@ -46,5 +50,8 @@ int ah_control_open(int card, int mode);
 int ah_control_close(int fd);
 int ah_card_get_info(int fd, snd_ctl_card_info_t *info);
 
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* __ALSA_CONTROL_H__ */

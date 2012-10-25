@@ -33,10 +33,12 @@
 #include <system/audio.h>
 #include <hardware/audio.h>
 
-namespace UcmHal {
+#include <tinyalsa/asoundlib.h>
 
-class Dev;
-class UseCaseMgr;
+#include "UcmHalUseCaseMgr.h"
+#include "UcmHalTypes.h"
+
+namespace UcmHal {
 
 class OutStream : public audio_stream_out {
 public:
@@ -72,6 +74,16 @@ private:
 	bool mStandby;
 	audio_devices_t mDevices;
 	audio_output_flags_t mFlags;
+
+	uclist_t::iterator mEntry;
+	
+	pcm_config mConfig;
+	int mWriteThreshold;
+	pcm *mPcm;
+
+	int startStream();
+	int doStandby();
+	int standBy();
 };
 
 }; // namespace UcmHal
