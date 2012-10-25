@@ -140,6 +140,9 @@ OutStream::OutStream(Dev &dev,
 }
 
 OutStream::~OutStream() {
+	pthread_mutex_lock(&mLock);
+	if (!mStandby)
+		doStandBy();
 	pthread_mutex_destroy(&mLock);
 }
 
@@ -319,7 +322,7 @@ int OutStream::startStream()
 }
 
 /* must be called with hw device and output stream mutexes locked */
-int OutStream::doStandby()
+int OutStream::doStandBy()
 {
 	LOGFUNC("%s(%p)", __FUNCTION__, this);
 	if (!mStandby) {
@@ -337,7 +340,7 @@ int OutStream::standBy()
 	LOGFUNC("%s(%p)", __FUNCTION__, this);
 	AutoMutex dLock(mDev.mLock);
 	AutoMutex sLock(mLock);
-	status = doStandby();
+	status = doStandBy();
 	return status;
 }
 

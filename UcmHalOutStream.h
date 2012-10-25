@@ -76,13 +76,13 @@ private:
 	audio_output_flags_t mFlags;
 
 	uclist_t::iterator mEntry;
-	
+
 	pcm_config mConfig;
 	int mWriteThreshold;
 	pcm *mPcm;
 
 	int startStream();
-	int doStandby();
+	int doStandBy();
 	int standBy();
 };
 
