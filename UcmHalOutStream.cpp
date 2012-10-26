@@ -117,8 +117,7 @@ OutStream::OutStream(Dev &dev,
 	stream->write = out_write;
 	stream->get_render_position = out_get_render_position;
 
-	mUcm.findEntry(mDev.mMode, mDevices, mFlags, mEntry);
-	assert(mEntry != mUcm.noEntry());
+	uh_assert_se(mUcm.findEntry(mDev.mMode, mDevices, mFlags, mEntry));
 
 	mConfig.channels = 2;
 	mConfig.rate = DEFAULT_OUT_SAMPLING_RATE;
