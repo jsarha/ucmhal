@@ -93,10 +93,12 @@ int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
 	}
 	AutoMutex lock(mLock);
 	if (mActiveVerb.empty() || mActiveVerb == SND_USE_CASE_VERB_INACTIVE) {
+		LOGV("Activating verb '%s'", i->mUcmVerb.c_str());
 		uh_assert_se(!snd_use_case_set_verb(mucm, i->mUcmVerb.c_str()));
 		// Only enable devices when enabling a verb
 		// TODO more complere support would maintain a union of devices from
 		//		active usecases.
+		LOGV("Activating device '%s'", i->mUcmDevice.c_str());
 		uh_assert_se(!snd_use_case_enable_device(mucm, i->mUcmDevice.c_str()));
 	}
 	else if (mActiveVerb != i->mUcmVerb) {
@@ -105,8 +107,10 @@ int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
 		return -1;
 	}
 
-	if (!i->mUcmModifier.empty())
+	if (!i->mUcmModifier.empty()) {
+		LOGV("Activating modifier '%s'", i->mUcmModifier.c_str());
 		uh_assert_se(!snd_use_case_enable_modifier(mucm, i->mUcmModifier.c_str()));
+	}
 
 	mActiveUseCaseCount++;
 	mActiveVerb = i->mUcmVerb;
@@ -125,15 +129,18 @@ int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
 	uh_assert(mActiveUseCaseCount >= 0);
 	if (mActiveUseCaseCount == 0) {
 		// Last active entry, just setting verb to "Inactive" should be enough
+		LOGV("Deactivating current verb '%s'", mActiveVerb.c_str());
 		uh_assert_se(!snd_use_case_set_verb(mucm, SND_USE_CASE_VERB_INACTIVE));
 		mActiveVerb = SND_USE_CASE_VERB_INACTIVE;
 	}
 	else {
 		// TODO more complere support would maintain a union of devices from
 		//		active usecases.
-		if (!i->mUcmModifier.empty())
-			uh_assert_se(
+		if (!i->mUcmModifier.empty()) {
+			LOGV("Deactivating modifier '%s'", i->mUcmModifier.c_str());
+		uh_assert_se(
 				!snd_use_case_disable_modifier(mucm, i->mUcmModifier.c_str()));
+		}
 	}
 	return 0;
 }
