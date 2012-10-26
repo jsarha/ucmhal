@@ -2,7 +2,7 @@
 # By Liam Girdwood <lrg@slimlogic.co.uk>
 
 SectionVerb
-  	EnableSequence
+	EnableSequence
 		'DL1 Media Playback Volume':1:120
 	EndSequence
 
@@ -40,8 +40,9 @@ EndSection
 SectionDevice
 	Name "Headset"
 	Comment "SDP4430 3.5mm Headset"
-	
+
 	EnableSequence
+		'DL1 PDM Switch':1:1
 		'DL1 Mixer Multimedia':1:1
 		'Sidetone Mixer Playback':1:1
 		'Headset Right Playback':1:1
@@ -57,6 +58,7 @@ SectionDevice
 		'Headset Right Playback':1:0
 		'Headset Left Playback':1:0
 		'Sidetone Mixer Playback':1:0
+		'DL1 PDM Switch':1:0
 	EndSequence
 
 	MasterPlaybackVolume 'Headset Playback Volume'
@@ -67,8 +69,9 @@ EndSection
 SectionDevice
 	Name "Handsfree"
 	Comment "SDP4430 Handsfree Speakers LS2 & LS3"
-	
+
 	EnableSequence
+		'DL1 PDM_DL2 Switch':1:1
 		'DL1 Mixer Multimedia':1:1
 		'Sidetone Mixer Playback':1:1
 		'Handsfree Right Playback':1:1
@@ -85,6 +88,7 @@ SectionDevice
 		'Handsfree Left Playback':1:0
 		'Sidetone Mixer Playback':1:0
 		'DL1 Mixer Multimedia':1:0
+		'DL1 PDM_DL2 Switch':1:0
 	EndSequence
 
 	MasterPlaybackVolume 'Handsfree Playback Volume'
@@ -146,4 +150,3 @@ SectionModifier
 	PlaybackPCM 3
 	MasterPlaybackVolume 'DL1 Tones Playback Volume'
 EndSection
-
