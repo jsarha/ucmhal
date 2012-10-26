@@ -2523,6 +2523,9 @@ static int dismantle_use_case(snd_use_case_mgr_t *uc_mgr,
 	if (ret < 0)
 		return ret;
 
+	/* update current_verb status */
+	uc_mgr->card.current_verb = VERB_NOT_INITIALISED;
+
 	return 0;
 }
 
