@@ -249,7 +249,7 @@ static void uc_mgr_stdout(const char *fmt,...)
 	va_end(va);
 }
 
-#undef UC_MGR_DEBUG
+#define UC_MGR_DEBUG
 
 #ifdef UC_MGR_DEBUG
 #define uc_dbg(fmt, arg...) do { \
@@ -3160,7 +3160,7 @@ int snd_use_case_switch_modifier(snd_use_case_mgr_t *uc_mgr,
 	struct use_case_modifier *old_modifier;
 	struct use_case_modifier *new_modifier;
 	static struct sequence_element *trans_sequence;
-	int ret = 0, old_id, new_id
+	int ret = 0, old_id, new_id;
 
 	uc_dbg("old %s, new %s", old, new);
 
