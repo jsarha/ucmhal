@@ -134,15 +134,10 @@ OutStream::OutStream(Dev &dev,
 	config->format = AUDIO_FORMAT_PCM_16_BIT;
 	config->channel_mask = AUDIO_CHANNEL_OUT_STEREO;
 	config->sample_rate = get_sample_rate();
-
-	pthread_mutex_init(&mLock, NULL);
 }
 
 OutStream::~OutStream() {
-	pthread_mutex_lock(&mLock);
-	if (!mStandby)
-		doStandBy();
-	pthread_mutex_destroy(&mLock);
+	standby();
 }
 
 uint32_t OutStream::get_sample_rate() const {
@@ -171,12 +166,17 @@ int OutStream::set_format(audio_format_t format) {
 }
 
 int OutStream::standby() {
-	int status;
 	LOGFUNC("%s(%p)", __FUNCTION__, this);
+	// TODO Do we really need the device lock here???
 	AutoMutex dLock(mDev.mLock);
 	AutoMutex sLock(mLock);
-	status = doStandBy();
-	return status;
+	if (!mStandby) {
+		pcm_close(mPcm);
+		mPcm = NULL;
+		mUcm.deactivateEntry(mEntry);
+		mStandby = 1;
+	}
+	return 0;
 }
 
 int OutStream::dump(int fd) const {
@@ -230,7 +230,7 @@ do_over:
 	 */
 	{
 		AutoMutex lock(mDev.mLock);
-		pthread_mutex_lock(&mLock);
+		mLock.lock();
 		if (mStandby) {
 			ret = startStream();
 			if (ret != 0)
@@ -269,7 +269,7 @@ exit:
 		usleep(usecs);
 	}
 
-	pthread_mutex_unlock(&mLock);
+	mLock.unlock();
 
 	if (ret == -EPIPE) {
 		/* Recover from an underrun */
@@ -321,19 +321,6 @@ int OutStream::startStream()
 	}
 
 	mStandby = 0;
-	return 0;
-}
-
-/* must be called with hw device and output stream mutexes locked */
-int OutStream::doStandBy()
-{
-	LOGFUNC("%s(%p)", __FUNCTION__, this);
-	if (!mStandby) {
-		pcm_close(mPcm);
-		mPcm = NULL;
-		mUcm.deactivateEntry(mEntry);
-		mStandby = 1;
-	}
 	return 0;
 }
 

@@ -150,13 +150,10 @@ Dev::Dev(const hw_module_t* module, hw_device_t** device) :
 	if (mUcm.loadConfiguration())
 		return;
 
-	pthread_mutex_init(&mLock, NULL);
-
 	mInitStatus = true;
 }
 
 Dev::~Dev() {
-	pthread_mutex_destroy(&mLock);
 }
 
 int Dev::open_output_stream(audio_io_handle_t handle,

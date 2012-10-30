@@ -32,17 +32,33 @@ class OutStream;
 class InStream;
 class UseCaseMgr;
 
+class Mutex {
+public:
+	inline Mutex() {
+		// Using recursive mutexes make code much simpler
+		pthread_mutexattr_t attr;
+		pthread_mutexattr_init(&attr);
+		pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+		pthread_mutex_init(&mMutex, &attr);
+	}
+	inline ~Mutex() { pthread_mutex_destroy(&mMutex); }
+	inline int lock() { return pthread_mutex_lock(&mMutex); } 
+	inline int unlock() { return pthread_mutex_unlock(&mMutex); }
+private:
+	pthread_mutex_t mMutex;
+};
+
 class AutoMutex {
 public:
-	inline AutoMutex(pthread_mutex_t &mutex) : mMutex(&mutex) {
-		pthread_mutex_lock(mMutex);
+	inline AutoMutex(Mutex &mutex) : mMutex(mutex) {
+		mMutex.lock();
 	}
-	inline AutoMutex(pthread_mutex_t *mutex) : mMutex(mutex) {
-		pthread_mutex_lock(mMutex);
+	inline AutoMutex(Mutex *mutex) : mMutex(*mutex) {
+		mMutex.lock();
 	}
-	inline ~AutoMutex() { pthread_mutex_unlock(mMutex); }
+	inline ~AutoMutex() { mMutex.unlock(); }
 private:
-	pthread_mutex_t *mMutex;
+	Mutex &mMutex;
 };
 
 typedef std::basic_string<char> string;

@@ -109,12 +109,9 @@ InStream::InStream(Dev &dev,
 	stream->get_input_frames_lost = in_get_input_frames_lost;
 
 	mConfig = *config;
-
-	pthread_mutex_init(&mLock, NULL);
 }
 
 InStream::~InStream() {
-	pthread_mutex_destroy(&mLock);
 }
 
 uint32_t InStream::get_sample_rate() const {

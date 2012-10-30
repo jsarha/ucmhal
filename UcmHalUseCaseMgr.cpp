@@ -46,13 +46,12 @@ const string &UseCaseMapEntry::dump() {
 
 UseCaseMgr::UseCaseMgr(MacroMap &mm) :
 	mucm(NULL), mMM(mm), mAllDevices(0), mCard(-1), mActiveUseCaseCount(0) {
-	pthread_mutex_init(&mLock, NULL);
 }
 
 UseCaseMgr::~UseCaseMgr() {
+	AutoMutex lock(mLock);
 	if (mucm)
 		snd_use_case_mgr_close(mucm);
-	pthread_mutex_destroy(&mLock);
 }
 
 int UseCaseMgr::loadConfiguration() {

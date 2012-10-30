@@ -33,6 +33,8 @@
 #include <system/audio.h>
 #include <hardware/audio.h>
 
+#include "UcmHalTypes.h"
+
 namespace UcmHal {
 
 class Dev;
@@ -68,7 +70,7 @@ public:
 private:
 	Dev &mDev;
 	UseCaseMgr &mUcm;
-	pthread_mutex_t mLock;
+	Mutex mLock;
 	bool mStandby;
 	audio_devices_t mDevices;
 	audio_config_t mConfig;

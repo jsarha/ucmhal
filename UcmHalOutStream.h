@@ -70,7 +70,7 @@ public:
 private:
 	Dev &mDev;
 	UseCaseMgr &mUcm;
-	pthread_mutex_t mLock;
+	Mutex mLock;
 	bool mStandby;
 	audio_devices_t mDevices;
 	audio_output_flags_t mFlags;
@@ -82,7 +82,6 @@ private:
 	pcm *mPcm;
 
 	int startStream();
-	int doStandBy();
 };
 
 }; // namespace UcmHal

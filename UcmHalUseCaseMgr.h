@@ -90,7 +90,7 @@ public:
 	const uclist_t::const_iterator noEntry() const { return mUCList.end(); }
 
 private:
-	pthread_mutex_t mLock;
+	Mutex mLock;
 	string mUcmConfName;
 	snd_use_case_mgr_t *mucm;
 	MacroMap &mMM;

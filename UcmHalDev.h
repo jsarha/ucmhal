@@ -65,7 +65,7 @@ public:
 	friend class OutStream;
 	friend class InStream;
 private:
-	pthread_mutex_t mLock;
+	Mutex mLock;
 	MacroMap mMM;
 	UseCaseMgr mUcm;
 	bool mInitStatus;
