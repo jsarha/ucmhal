@@ -20,7 +20,14 @@ static inline void debug_print(const char *file, int line, const char *tag,
 
 #define LOGV(...) debug_print(__FILE__, __LINE__, LOG_TAG, 'V',  __VA_ARGS__)
 #define LOGD(...) debug_print(__FILE__, __LINE__, LOG_TAG, 'D',  __VA_ARGS__)
+#define LOGI(...) debug_print(__FILE__, __LINE__, LOG_TAG, 'D',  __VA_ARGS__)
 #define LOGW(...) debug_print(__FILE__, __LINE__, LOG_TAG, 'W',  __VA_ARGS__)
 #define LOGE(...) debug_print(__FILE__, __LINE__, LOG_TAG, 'E',  __VA_ARGS__)
+
+#define ALOGV(...) debug_print(__FILE__, __LINE__, LOG_TAG, 'V',  __VA_ARGS__)
+#define ALOGD(...) debug_print(__FILE__, __LINE__, LOG_TAG, 'D',  __VA_ARGS__)
+#define ALOGI(...) debug_print(__FILE__, __LINE__, LOG_TAG, 'D',  __VA_ARGS__)
+#define ALOGW(...) debug_print(__FILE__, __LINE__, LOG_TAG, 'W',  __VA_ARGS__)
+#define ALOGE(...) debug_print(__FILE__, __LINE__, LOG_TAG, 'E',  __VA_ARGS__)
 
 #endif
