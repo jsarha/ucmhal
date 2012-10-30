@@ -28,6 +28,7 @@
 
 #include "UcmHalUseCaseMgr.h"
 #include "UcmHalTypes.h"
+#include "UcmHalParameters.h"
 
 namespace UcmHal {
 
@@ -70,6 +71,9 @@ private:
 	UseCaseMgr mUcm;
 	bool mInitStatus;
 	audio_mode_t mMode;
+
+	static const char *supportedParameters[];
+	Parameters mParameters;
 
 	OutStreamSet_t mOutStreams;
 	InStreamSet_t mInStreams;

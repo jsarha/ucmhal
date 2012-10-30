@@ -44,6 +44,11 @@ public:
 				(mDevices & mDevicesMask) == (devices & mDevicesMask));
 	}
 	const string &dump();
+	const int equal(UseCaseMapEntry &o) {
+		return (mUcmVerb == o.mUcmVerb && mUcmDevice == o.mUcmDevice &&
+				mUcmModifier == o.mUcmModifier);
+	}
+	bool active() { return mActive; }
 	friend class UseCaseMgr;
 private:
 	int mMode;
@@ -85,6 +90,9 @@ public:
 
 	int getPlaybackCard(const uclist_t::iterator &entry);
 	int getPlaybackPort(const uclist_t::iterator &entry);
+
+	int changeStandby(const uclist_t::iterator &o, 
+					  const uclist_t::iterator &n) const;
 
 	int getSupportedDeivices() const { return mAllDevices; }
 	const uclist_t::const_iterator noEntry() const { return mUCList.end(); }

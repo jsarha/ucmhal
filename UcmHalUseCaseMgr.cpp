@@ -86,6 +86,7 @@ int UseCaseMgr::findEntry(audio_mode_t mode, audio_devices_t devices,
 
 int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
 	LOGE("%s(%s)", __func__, i->dump().c_str());
+	uh_assert(i != noEntry());
 	if (i->mActive) {
 		LOGE("Entry %s already active", i->dump().c_str());
 		return -1;
@@ -154,6 +155,16 @@ int UseCaseMgr::getPlaybackPort(const uclist_t::iterator &i) {
 		return snd_use_case_get_verb_playback_pcm(mucm);
 	}
 	return snd_use_case_get_mod_playback_pcm(mucm, i->mUcmModifier.c_str());
+}
+
+int UseCaseMgr::changeStandby(const uclist_t::iterator &o, 
+							  const uclist_t::iterator &n) const {
+	return 1;
+	/* Could be something like bellow, but let's suspend every time for now
+	return (o.mUcmVerb != n.mUcmVerb || 
+			snd_use_case_get_mod_playback_pcm(mucm, n->mUcmModifier.c_str()) !=
+			snd_use_case_get_mod_playback_pcm(mucm, o->mUcmModifier.c_str()));
+	*/
 }
 
 int UseCaseMgr::loadUseCaseMap(const char *file) {

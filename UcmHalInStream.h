@@ -67,6 +67,7 @@ public:
 
 	static int check_parameters(audio_config_t *config);
 
+	int modeUpdate(audio_mode_t mode);
 private:
 	Dev &mDev;
 	UseCaseMgr &mUcm;

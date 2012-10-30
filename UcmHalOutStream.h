@@ -67,6 +67,7 @@ public:
 	ssize_t write(const void* buffer, size_t bytes);
 	int get_render_position(uint32_t *dsp_frames) const;
 
+	int modeUpdate(audio_mode_t mode);
 private:
 	Dev &mDev;
 	UseCaseMgr &mUcm;

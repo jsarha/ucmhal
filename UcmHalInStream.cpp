@@ -16,6 +16,7 @@
 
 #include "UcmHalInStream.h"
 #include "UcmHalMacro.h"
+#include "UcmHalUseCaseMgr.h"
 
 namespace UcmHal {
 
@@ -185,6 +186,25 @@ ssize_t InStream::read(void* buffer, size_t bytes) {
 
 uint32_t InStream::get_input_frames_lost() {
 	//TODO
+	return 0;
+}
+
+int InStream::modeUpdate(audio_mode_t mode) {
+// TODO
+/*
+	AutoMutex lock(mLock);
+	uclist_t::iterator newEntry;
+	uh_assert_se(mUcm.findEntry(mode, mDevices, mFlags, newEntry));
+	if (mEntry->active()) {
+		if (mEntry->equal(*newEntry))
+			return 0;
+		if (mUcm.changeStandby(mEntry, newEntry))
+			standby();
+		else 
+			mUcm.deactivateEntry(mEntry);
+		mUcm.deactivateEntry(mEntry);
+	}
+*/
 	return 0;
 }
 

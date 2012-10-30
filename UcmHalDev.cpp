@@ -48,17 +48,17 @@ static int adev_close(hw_device_t *device) {
 }
 
 static int adev_open_output_stream(audio_hw_device *dev,
-								   audio_io_handle_t handle,
-								   audio_devices_t devices,
-								   audio_output_flags_t flags,
-								   struct audio_config *config,
-								   struct audio_stream_out **stream_out) {
+                                   audio_io_handle_t handle,
+                                   audio_devices_t devices,
+                                   audio_output_flags_t flags,
+                                   struct audio_config *config,
+                                   struct audio_stream_out **stream_out) {
 	return ((Dev *)dev)->open_output_stream(handle, devices, flags, config,
 											stream_out);
 }
 
 static void adev_close_output_stream(audio_hw_device *dev,
-									 struct audio_stream_out *stream) {
+                                     struct audio_stream_out *stream) {
 	((Dev *)dev)->close_output_stream(stream);
 }
 
@@ -100,10 +100,10 @@ static size_t adev_get_input_buffer_size(const audio_hw_device *dev,
 }
 
 static int adev_open_input_stream(audio_hw_device *dev,
-								  audio_io_handle_t handle,
-								  audio_devices_t devices,
-								  struct audio_config *config,
-								  struct audio_stream_in **stream_in) {
+                                  audio_io_handle_t handle,
+                                  audio_devices_t devices,
+                                  struct audio_config *config,
+                                  struct audio_stream_in **stream_in) {
 	return ((Dev *)dev)->open_input_stream(handle, devices, config, stream_in);
 }
 
@@ -119,8 +119,18 @@ static uint32_t adev_get_supported_devices(const audio_hw_device *dev) {
 	return ((const Dev *)dev)->get_supported_devices();
 }
 
+const char *Dev::supportedParameters[] = { 
+	AUDIO_PARAMETER_KEY_TTY_MODE,
+	AUDIO_PARAMETER_KEY_BT_NREC,
+	AUDIO_PARAMETER_KEY_SCREEN_STATE,
+	NULL
+};
+
 Dev::Dev(const hw_module_t* module, hw_device_t** device) :
-	mUcm(mMM), mInitStatus(false), mMode(AUDIO_MODE_NORMAL) {
+	mUcm(mMM),
+	mInitStatus(false),
+	mMode(AUDIO_MODE_NORMAL),
+	mParameters(supportedParameters) {
 	// C++ compiler does not allow direct assignment of function pointer members
 	audio_hw_device *hw_device = reinterpret_cast<audio_hw_device *>(this);
 	memset(hw_device, 0, sizeof(hw_device));
@@ -157,10 +167,10 @@ Dev::~Dev() {
 }
 
 int Dev::open_output_stream(audio_io_handle_t handle,
-							audio_devices_t devices,
-							audio_output_flags_t flags,
-							struct audio_config *config,
-							struct audio_stream_out **stream_out) {
+                            audio_devices_t devices,
+                            audio_output_flags_t flags,
+                            struct audio_config *config,
+                            struct audio_stream_out **stream_out) {
 	AutoMutex lock(mLock);
 	OutStream *out = new OutStream(*this, mUcm, handle, devices, flags, config);
 	if (!out)
@@ -178,12 +188,13 @@ void Dev::close_output_stream(struct audio_stream_out *stream) {
 }
 
 int Dev::set_parameters(const char *kvpairs) {
-	return -ENOSYS;
+    LOGFUNC("%s(%p, %s)", this, kvpairs);
+    mParameters.update(kvpairs);
+    return 0;
 }
 
 char * Dev::get_parameters(const char *keys) const {
-	static char *buf = { '\0' };
-	return buf;
+	return mParameters.toStr();
 }
 
 int Dev::init_check() const {
@@ -201,7 +212,16 @@ int Dev::set_master_volume(float volume) {
 }
 
 int Dev::set_mode(audio_mode_t mode) {
-	return -ENOSYS;
+	AutoMutex lock(mLock);
+	if (mMode != mode) {
+		for (OutStreamSet_t::iterator i = mOutStreams.begin();
+			 i != mOutStreams.begin(); i++)
+			(*i)->modeUpdate(mode);
+		for (InStreamSet_t::iterator i = mInStreams.begin();
+			 i != mInStreams.begin(); i++)
+			(*i)->modeUpdate(mode);
+	}
+	return 0;
 }
 
 int Dev::set_mic_mute(bool state) {
