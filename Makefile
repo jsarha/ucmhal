@@ -10,7 +10,9 @@ CPPSOURCES = \
 	UcmHalUseCaseMgr.cpp \
 	UcmHalMacroMap.cpp \
 	UcmHalOutStream.cpp \
-	UcmHalInStream.cpp
+	UcmHalInStream.cpp \
+	UcmHalParameters.cpp
+
 HEADERS = \
 	use-case.h \
 	alsa-shim.h \
@@ -20,9 +22,11 @@ HEADERS = \
 	UcmHalMacroMap.h \
 	UcmHalOutStream.h \
 	UcmHalInStream.h \
+	UcmHalParameters.h \
 	UcmHalTypes.h \
 	UcmHalMacro.h \
 	test/cutils/log.h
+
 OBJECTS = $(CPPSOURCES:.cpp=.o) $(CSOURCES:.c=.o)
 ANDROIDOBJECTS = \
 	test/cutils/str_parms.o \
@@ -52,7 +56,7 @@ ucmhaltest: $(OBJECTS) $(ANDROIDOBJECTS)
 %.o : %.c
 	gcc $(CFLAGS) -c -o $@ $<
 
-clean :
+clean:
 	rm -f $(OBJECTS) $(ANDROIDOBJECTS)
 
 $(OBJECTS): $(HEADERS)
