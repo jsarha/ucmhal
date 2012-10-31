@@ -34,10 +34,16 @@ namespace UcmHal {
 
 class OutStream;
 class InStream;
+class Dev;
+
+struct ucmhal_dev {
+	audio_hw_device android_dev;
+	Dev *me;
+};
 
 class Dev : public audio_hw_device {
 public:
-	Dev(const hw_module_t* module, hw_device_t** device);
+	Dev(const hw_module_t* module);
 	~Dev();
 	// Forward methods from audio_hw_device struct
 	int open_output_stream(audio_io_handle_t handle,
@@ -63,9 +69,12 @@ public:
 	uint32_t get_supported_devices() const;
 	int dump(int fd) const;
 
+	audio_hw_device *audio_hw_device() { return &mdev.android_dev; }
+
 	friend class OutStream;
 	friend class InStream;
 private:
+	ucmhal_dev mdev;
 	Mutex mLock;
 	MacroMap mMM;
 	UseCaseMgr mUcm;

@@ -26,7 +26,7 @@ int ucmhal_adev_open(const hw_module_t* module, const char* name,
 	if (strcmp(name, AUDIO_HARDWARE_INTERFACE) != 0)
 		return -EINVAL;
 
-	UcmHal::Dev *dev = new UcmHal::Dev(module, device);
+	UcmHal::Dev *dev = new UcmHal::Dev(module);
 
 	if (!dev)
 		return -ENOMEM;
@@ -34,16 +34,17 @@ int ucmhal_adev_open(const hw_module_t* module, const char* name,
 	int ret = dev->init_check();
 	if (ret)
 		delete dev;
+	else
+		*device = &dev->audio_hw_device()->common;
 
 	return ret;
 }
 
 namespace UcmHal {
 
-static int adev_close(hw_device_t *device) {
-	Dev *dev = (Dev *) device;
+static int adev_close(hw_device_t *dev) {
 	LOGE("Closing audio device");
-	delete dev;
+	delete ((ucmhal_dev *)dev)->me;
 	return 0;
 }
 
@@ -53,50 +54,50 @@ static int adev_open_output_stream(audio_hw_device *dev,
                                    audio_output_flags_t flags,
                                    struct audio_config *config,
                                    struct audio_stream_out **stream_out) {
-	return ((Dev *)dev)->open_output_stream(handle, devices, flags, config,
-											stream_out);
+	return ((ucmhal_dev *)dev)->me->open_output_stream(
+		handle, devices, flags, config, stream_out);
 }
 
 static void adev_close_output_stream(audio_hw_device *dev,
                                      struct audio_stream_out *stream) {
-	((Dev *)dev)->close_output_stream(stream);
+	((ucmhal_dev *)dev)->me->close_output_stream(stream);
 }
 
 static int adev_set_parameters(audio_hw_device *dev, const char *kvpairs) {
-	return ((Dev *)dev)->set_parameters(kvpairs);
+	return ((ucmhal_dev *)dev)->me->set_parameters(kvpairs);
 }
 
 static char *adev_get_parameters(const audio_hw_device *dev, const char *keys) {
-	return ((const Dev *)dev)->get_parameters(keys);
+	return ((const Dev *)((ucmhal_dev *)dev)->me)->get_parameters(keys);
 }
 
 static int adev_init_check(const audio_hw_device *dev) {
-	return ((const Dev *)dev)->init_check();
+	return ((const Dev *)((ucmhal_dev *)dev)->me)->init_check();
 }
 
 static int adev_set_voice_volume(audio_hw_device *dev, float volume) {
-	return ((Dev *)dev)->set_voice_volume(volume);
+	return ((ucmhal_dev *)dev)->me->set_voice_volume(volume);
 }
 
 static int adev_set_master_volume(audio_hw_device *dev, float volume) {
-	return ((Dev *)dev)->set_master_volume(volume);
+	return ((ucmhal_dev *)dev)->me->set_master_volume(volume);
 }
 
 static int adev_set_mode(audio_hw_device *dev, audio_mode_t mode) {
-	return ((Dev *)dev)->set_mode(mode);
+	return ((ucmhal_dev *)dev)->me->set_mode(mode);
 }
 
 static int adev_set_mic_mute(audio_hw_device *dev, bool state) {
-	return ((Dev *)dev)->set_mic_mute(state);
+	return ((ucmhal_dev *)dev)->me->set_mic_mute(state);
 }
 
 static int adev_get_mic_mute(const audio_hw_device *dev, bool *state) {
-	return ((const Dev *)dev)->get_mic_mute(state);
+	return ((const Dev *)((ucmhal_dev *)dev)->me)->get_mic_mute(state);
 }
 
 static size_t adev_get_input_buffer_size(const audio_hw_device *dev,
 										 const audio_config *config) {
-	return ((const Dev *)dev)->get_input_buffer_size(config);
+	return ((const Dev *)((ucmhal_dev *)dev)->me)->get_input_buffer_size(config);
 }
 
 static int adev_open_input_stream(audio_hw_device *dev,
@@ -104,58 +105,57 @@ static int adev_open_input_stream(audio_hw_device *dev,
                                   audio_devices_t devices,
                                   struct audio_config *config,
                                   struct audio_stream_in **stream_in) {
-	return ((Dev *)dev)->open_input_stream(handle, devices, config, stream_in);
+	return ((ucmhal_dev *)dev)->me->open_input_stream(
+		handle, devices, config, stream_in);
 }
 
 static void adev_close_input_stream(audio_hw_device *dev, struct audio_stream_in *stream) {
-	((Dev *)dev)->close_input_stream(stream);
+	((ucmhal_dev *)dev)->me->close_input_stream(stream);
 }
 
 static int adev_dump(const audio_hw_device *dev, int fd) {
-	return ((Dev *)dev)->dump(fd);
+	return ((ucmhal_dev *)dev)->me->dump(fd);
 }
 
 static uint32_t adev_get_supported_devices(const audio_hw_device *dev) {
-	return ((const Dev *)dev)->get_supported_devices();
+	return ((const Dev *)((ucmhal_dev *)dev)->me)->get_supported_devices();
 }
 
-const char *Dev::supportedParameters[] = { 
+const char *Dev::supportedParameters[] = {
 	AUDIO_PARAMETER_KEY_TTY_MODE,
 	AUDIO_PARAMETER_KEY_BT_NREC,
 	AUDIO_PARAMETER_KEY_SCREEN_STATE,
 	NULL
 };
 
-Dev::Dev(const hw_module_t* module, hw_device_t** device) :
+Dev::Dev(const hw_module_t* module) :
 	mUcm(mMM),
 	mInitStatus(false),
 	mMode(AUDIO_MODE_NORMAL),
 	mParameters(supportedParameters) {
-	// C++ compiler does not allow direct assignment of function pointer members
-	audio_hw_device *hw_device = reinterpret_cast<audio_hw_device *>(this);
-	memset(hw_device, 0, sizeof(hw_device));
+	memset(&mdev, 0, sizeof(mdev));
 
-	common.tag = HARDWARE_DEVICE_TAG;
-	common.version = AUDIO_DEVICE_API_VERSION_CURRENT;
-	common.module = (struct hw_module_t *) module;
-	common.close = adev_close;
+	mdev.android_dev.common.tag = HARDWARE_DEVICE_TAG;
+	mdev.android_dev.common.version = AUDIO_DEVICE_API_VERSION_CURRENT;
+	mdev.android_dev.common.module = (struct hw_module_t *) module;
+	mdev.android_dev.common.close = adev_close;
 
-	hw_device->get_supported_devices = adev_get_supported_devices;
-	hw_device->init_check = adev_init_check;
-	hw_device->set_voice_volume = adev_set_voice_volume;
-	hw_device->set_master_volume = adev_set_master_volume;
-	hw_device->set_mode = adev_set_mode;
-	hw_device->set_mic_mute = adev_set_mic_mute;
-	hw_device->get_mic_mute = adev_get_mic_mute;
-	hw_device->set_parameters = adev_set_parameters;
-	hw_device->get_parameters = adev_get_parameters;
-	hw_device->get_input_buffer_size = adev_get_input_buffer_size;
-	hw_device->open_output_stream = adev_open_output_stream;
-	hw_device->close_output_stream = adev_close_output_stream;
-	hw_device->open_input_stream = adev_open_input_stream;
-	hw_device->close_input_stream = adev_close_input_stream;
-	hw_device->dump = adev_dump;
-	*device = &common;
+	mdev.android_dev.get_supported_devices = adev_get_supported_devices;
+	mdev.android_dev.init_check = adev_init_check;
+	mdev.android_dev.set_voice_volume = adev_set_voice_volume;
+	mdev.android_dev.set_master_volume = adev_set_master_volume;
+	mdev.android_dev.set_mode = adev_set_mode;
+	mdev.android_dev.set_mic_mute = adev_set_mic_mute;
+	mdev.android_dev.get_mic_mute = adev_get_mic_mute;
+	mdev.android_dev.set_parameters = adev_set_parameters;
+	mdev.android_dev.get_parameters = adev_get_parameters;
+	mdev.android_dev.get_input_buffer_size = adev_get_input_buffer_size;
+	mdev.android_dev.open_output_stream = adev_open_output_stream;
+	mdev.android_dev.close_output_stream = adev_close_output_stream;
+	mdev.android_dev.open_input_stream = adev_open_input_stream;
+	mdev.android_dev.close_input_stream = adev_close_input_stream;
+	mdev.android_dev.dump = adev_dump;
+	mdev.me = this;
 
 	if (mUcm.loadConfiguration())
 		return;
