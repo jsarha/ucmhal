@@ -23,6 +23,7 @@
 
 #include <string.h>
 #include <list>
+#include <map>
 #include <utility>
 
 #include "UcmHalTypes.h"
@@ -31,38 +32,56 @@ struct str_parms;
 
 namespace UcmHal {
 
-//template<T>
 class Parameters {
 public:
 	Parameters(const char *supported[]);
 	~Parameters();
-	
-	//void setHook(T *obj, void (T::*hook), const char *key);
-		             
+
 	int update(const char *kvpairs, std::list<const char *> *changed = NULL);
 	string *get(const char *key, string &value) const;
 	char *toStr() const;
 private:
 	const char **mSupported;
 	str_parms *mparms;
-//	std::map<const char *, Hook<T>, keycmp> mHooks;
 };
 
-/* Hook implementation postponed, not sure if they are needed
-template<T>
+template<class T>
 class Hook {
 public:
 	Hook(T *obj, void (T::*hook)(const char *), const char *key) :
-		obj(mObj, mHook(hook), mKey(key) {}
-	void fire(const char *val) {
-		(mObj->*mHook)(val);
+		mObj(obj), mHook(hook), mKey(key) {}
+	void fire() {
+		(mObj->*mHook)();
 	}
 private:
 	const char *mKey;
 	T *mObj;
-	void (T::*mHook)(const char *val);
-}
-*/
+	void (T::*mHook)();
+};
+
+template<class T>
+class HookedParameters : public Parameters {
+public:
+	HookedParameters(const char *supported[]) : Parameters(supported) {}
+
+	void setHook(T *obj, void (T::*hook)(const char *), const char *key) {
+		mHooks.insert(Hook<T>(obj, hook, key));
+	}
+
+	int updateTrigger(const char *kvpairs) {
+		std::list<const char *> changed;
+		int ret = update(kvpairs, &changed);
+		for (std::list<const char *>::iterator i = changed.begin();
+		     i != changed.end(); i++) {
+			if (mHooks.count(*i) == 1)
+				mHooks.find(*i)->fire();
+		}
+		return ret;
+	}
+private:
+	std::map<const char *, Hook<T>, strcomp> mHooks;
+};
+
 
 }; // namespace UcmHal
 #endif /* UCMHALPARAMETERS_H */

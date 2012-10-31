@@ -73,7 +73,7 @@ private:
 	audio_mode_t mMode;
 
 	static const char *supportedParameters[];
-	Parameters mParameters;
+	HookedParameters<Dev> mParameters;
 
 	OutStreamSet_t mOutStreams;
 	InStreamSet_t mInStreams;

@@ -31,7 +31,6 @@ extern "C" {
 
 namespace UcmHal {
 
-
 Parameters::Parameters(const char **supported) : mSupported(supported) {
 	uh_assert_se(mparms = str_parms_create());
 }
@@ -70,7 +69,7 @@ string *Parameters::get(const char *key, string &value) const {
 	int ret;
 	char val[32];
 	value.clear();
-	ret = str_parms_get_str(mparms, key, val, sizeof(value));	
+	ret = str_parms_get_str(mparms, key, val, sizeof(value));
 	if (ret >= 0)
 		value = val;
 	return &value;

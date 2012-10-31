@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <string.h>
 
 #include <set>
 #include <utility>
@@ -62,6 +63,15 @@ private:
 };
 
 typedef std::basic_string<char> string;
+
+struct strcomp {
+	bool operator()(const char *a, const char *b) const {
+		return 0 > ::strcmp(a, b);
+	}
+	bool operator()(const char *&a, const char *&b) const {
+		return 0 > ::strcmp(a, b);
+	}
+};
 
 template<typename T>
 struct ptrcmp {
