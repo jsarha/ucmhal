@@ -69,6 +69,12 @@ int main(int argc, char *argv[]) {
 
 		play_sine(stream_out_hf, 44100);
 		fgets(buf, sizeof(buf), stdin);
+		adev->set_parameters(adev, AUDIO_PARAMETER_KEY_SCREEN_STATE "=on;");
+		fgets(buf, sizeof(buf), stdin);
+		adev->set_parameters(adev, AUDIO_PARAMETER_KEY_SCREEN_STATE "=on;");
+		fgets(buf, sizeof(buf), stdin);
+		adev->set_parameters(adev, AUDIO_PARAMETER_KEY_SCREEN_STATE "=off;");
+		fgets(buf, sizeof(buf), stdin);
 
 		adev->close_output_stream(adev, stream_out_hf);
 
