@@ -21,66 +21,68 @@
 namespace UcmHal {
 
 uint32_t in_get_sample_rate(const struct audio_stream *stream) {
-	return ((const InStream *) stream)->get_sample_rate();
+	return ((const InStream *)((ucmhal_in *)stream)->me)->get_sample_rate();
 }
 
 int in_set_sample_rate(struct audio_stream *stream, uint32_t rate) {
-	return ((InStream *) stream)->set_sample_rate(rate);
+	return ((ucmhal_in *)stream)->me->set_sample_rate(rate);
 }
 
 size_t in_get_buffer_size(const struct audio_stream *stream) {
-	return ((const InStream *) stream)->get_buffer_size();
+	return ((const InStream *)((ucmhal_in *)stream)->me)->get_buffer_size();
 }
 
 uint32_t in_get_channels(const struct audio_stream *stream) {
-	return ((const InStream *) stream)->get_channels();
+	return ((const InStream *)((ucmhal_in *)stream)->me)->get_channels();
 }
 
 audio_format_t in_get_format(const struct audio_stream *stream) {
-	return ((const InStream *) stream)->get_format();
+	return ((const InStream *)((ucmhal_in *)stream)->me)->get_format();
 }
 
 int in_set_format(struct audio_stream *stream, audio_format_t format) {
-	return ((InStream *) stream)->set_format(format);
+	return ((ucmhal_in *)stream)->me->set_format(format);
 }
 
 int in_standby(struct audio_stream *stream) {
-	return ((InStream *) stream)->standby();
+	return ((ucmhal_in *)stream)->me->standby();
 }
 
 int in_dump(const struct audio_stream *stream, int fd) {
-	return ((const InStream *) stream)->dump(fd);
+	return ((const InStream *)((ucmhal_in *)stream)->me)->dump(fd);
 }
 
 int in_set_parameters(struct audio_stream *stream, const char *kvpairs) {
-	return ((InStream *) stream)->set_parameters(kvpairs);
+	return ((ucmhal_in *)stream)->me->set_parameters(kvpairs);
 }
 
 char * in_get_parameters(const struct audio_stream *stream,
                          const char *keys) {
-	return ((const InStream *) stream)->get_parameters(keys);
+	return ((const InStream *)((ucmhal_in *)stream)->me)->get_parameters(keys);
 }
 
 int in_add_audio_effect(const struct audio_stream *stream,
                         effect_handle_t effect) {
-	return ((const InStream *) stream)->add_audio_effect(effect);
+	return ((const InStream *)((ucmhal_in *)stream)->me)->
+		add_audio_effect(effect);
 }
 
 int in_remove_audio_effect(const struct audio_stream *stream,
                            effect_handle_t effect) {
-	return ((const InStream *) stream)->remove_audio_effect(effect);
+	return ((const InStream *)((ucmhal_in *)stream)->me)->
+		remove_audio_effect(effect);
 }
 
 int in_set_gain(struct audio_stream_in *stream, float gain) {
-	return ((InStream *) stream)->set_gain(gain);
+	return ((ucmhal_in *)stream)->me->set_gain(gain);
 }
 
 ssize_t in_read(struct audio_stream_in *stream, void* buffer, size_t bytes) {
-	return ((InStream *) stream)->read(buffer, bytes);
+	return ((ucmhal_in *)stream)->me->read(buffer, bytes);
 }
 
 uint32_t in_get_input_frames_lost(struct audio_stream_in *stream) {
-	return ((InStream *) stream)->get_input_frames_lost();
+	return ((ucmhal_in *)stream)->me->get_input_frames_lost();
 }
 
 InStream::InStream(Dev &dev,
@@ -89,25 +91,24 @@ InStream::InStream(Dev &dev,
                    audio_devices_t devices,
                    struct audio_config *config) :
 	mDev(dev), mUcm(ucm), mStandby(true), mDevices(devices) {
-	// C-style cast would save couple of cycles
-	audio_stream_in *stream = reinterpret_cast<audio_stream_in *>(this);
-	memset(stream, 0, sizeof(stream));
+	memset(&m_in, 0, sizeof(m_in));
 
-	common.get_sample_rate = in_get_sample_rate;
-	common.set_sample_rate = in_set_sample_rate;
-	common.get_buffer_size = in_get_buffer_size;
-	common.get_channels = in_get_channels;
-	common.get_format = in_get_format;
-	common.set_format = in_set_format;
-	common.standby = in_standby;
-	common.dump = in_dump;
-	common.set_parameters = in_set_parameters;
-	common.get_parameters = in_get_parameters;
-	common.add_audio_effect = in_add_audio_effect;
-	common.remove_audio_effect = in_remove_audio_effect;
-	stream->set_gain = in_set_gain;
-	stream->read = in_read;
-	stream->get_input_frames_lost = in_get_input_frames_lost;
+	m_in.android_in.common.get_sample_rate = in_get_sample_rate;
+	m_in.android_in.common.set_sample_rate = in_set_sample_rate;
+	m_in.android_in.common.get_buffer_size = in_get_buffer_size;
+	m_in.android_in.common.get_channels = in_get_channels;
+	m_in.android_in.common.get_format = in_get_format;
+	m_in.android_in.common.set_format = in_set_format;
+	m_in.android_in.common.standby = in_standby;
+	m_in.android_in.common.dump = in_dump;
+	m_in.android_in.common.set_parameters = in_set_parameters;
+	m_in.android_in.common.get_parameters = in_get_parameters;
+	m_in.android_in.common.add_audio_effect = in_add_audio_effect;
+	m_in.android_in.common.remove_audio_effect = in_remove_audio_effect;
+	m_in.android_in.set_gain = in_set_gain;
+	m_in.android_in.read = in_read;
+	m_in.android_in.get_input_frames_lost = in_get_input_frames_lost;
+	m_in.me = this;
 
 	mConfig = *config;
 }
@@ -200,7 +201,7 @@ int InStream::modeUpdate(audio_mode_t mode) {
 			return 0;
 		if (mUcm.changeStandby(mEntry, newEntry))
 			standby();
-		else 
+		else
 			mUcm.deactivateEntry(mEntry);
 		mUcm.deactivateEntry(mEntry);
 	}

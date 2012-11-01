@@ -40,14 +40,19 @@
 
 namespace UcmHal {
 
+struct ucmhal_out {
+	audio_stream_out android_out;
+	OutStream *me;
+};
+
 class OutStream : public audio_stream_out {
 public:
 	OutStream(Dev &dev,
-			  UseCaseMgr &ucm,
-			  audio_io_handle_t handle,
-			  audio_devices_t devices,
-			  audio_output_flags_t flags,
-			  struct audio_config *config);
+	          UseCaseMgr &ucm,
+	          audio_io_handle_t handle,
+	          audio_devices_t devices,
+	          audio_output_flags_t flags,
+	          struct audio_config *config);
 	~OutStream();
 
 	uint32_t get_sample_rate() const;
@@ -67,8 +72,10 @@ public:
 	ssize_t write(const void* buffer, size_t bytes);
 	int get_render_position(uint32_t *dsp_frames) const;
 
+	audio_stream_out *audio_stream_out() { return &m_out.android_out; }
 	int modeUpdate(audio_mode_t mode);
 private:
+	ucmhal_out m_out;
 	Dev &mDev;
 	UseCaseMgr &mUcm;
 	Mutex mLock;

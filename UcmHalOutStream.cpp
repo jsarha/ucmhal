@@ -21,72 +21,75 @@
 namespace UcmHal {
 
 uint32_t out_get_sample_rate(const struct audio_stream *stream) {
-	return ((const OutStream *) stream)->get_sample_rate();
+	return ((const OutStream *)((ucmhal_out *)stream)->me)->get_sample_rate();
 }
 
 int out_set_sample_rate(struct audio_stream *stream, uint32_t rate) {
-	return ((OutStream *) stream)->set_sample_rate(rate);
+	return ((ucmhal_out *) stream)->me->set_sample_rate(rate);
 }
 
 size_t out_get_buffer_size(const struct audio_stream *stream) {
-	return ((const OutStream *) stream)->get_buffer_size();
+	return ((const OutStream *)((ucmhal_out *)stream)->me)->get_buffer_size();
 }
 
 uint32_t out_get_channels(const struct audio_stream *stream) {
-	return ((const OutStream *) stream)->get_channels();
+	return ((const OutStream *)((ucmhal_out *)stream)->me)->get_channels();
 }
 
 audio_format_t out_get_format(const struct audio_stream *stream) {
-	return ((const OutStream *) stream)->get_format();
+	return ((const OutStream *)((ucmhal_out *)stream)->me)->get_format();
 }
 
 int out_set_format(struct audio_stream *stream, audio_format_t format) {
-	return ((OutStream *) stream)->set_format(format);
+	return ((ucmhal_out *) stream)->me->set_format(format);
 }
 
 int out_standby(struct audio_stream *stream) {
-	return ((OutStream *) stream)->standby();
+	return ((ucmhal_out *) stream)->me->standby();
 }
 
 int out_dump(const struct audio_stream *stream, int fd) {
-	return ((const OutStream *) stream)->dump(fd);
+	return ((const OutStream *)((ucmhal_out *)stream)->me)->dump(fd);
 }
 
 int out_set_parameters(struct audio_stream *stream, const char *kvpairs) {
-	return ((OutStream *) stream)->set_parameters(kvpairs);
+	return ((ucmhal_out *) stream)->me->set_parameters(kvpairs);
 }
 
 char * out_get_parameters(const struct audio_stream *stream,
 						  const char *keys) {
-	return ((const OutStream *) stream)->get_parameters(keys);
+	return ((const OutStream *)((ucmhal_out *)stream)->me)->get_parameters(keys);
 }
 
 int out_add_audio_effect(const struct audio_stream *stream,
 						 effect_handle_t effect) {
-	return ((const OutStream *) stream)->add_audio_effect(effect);
+	return ((const OutStream *)((ucmhal_out *)stream)->me)->
+		add_audio_effect(effect);
 }
 
 int out_remove_audio_effect(const struct audio_stream *stream,
 							effect_handle_t effect) {
-	return ((const OutStream *) stream)->remove_audio_effect(effect);
+	return ((const OutStream *)((ucmhal_out *)stream)->me)->
+		remove_audio_effect(effect);
 }
 
 uint32_t out_get_latency(const struct audio_stream_out *stream) {
-	return ((const OutStream *) stream)->get_latency();
+	return ((const OutStream *)((ucmhal_out *)stream)->me)->get_latency();
 }
 
 int out_set_volume(struct audio_stream_out *stream, float left, float right) {
-	return ((OutStream *) stream)->set_volume(left, right);
+	return ((ucmhal_out *) stream)->me->set_volume(left, right);
 }
 
 ssize_t out_write(struct audio_stream_out *stream, const void* buffer,
 				  size_t bytes) {
-	return ((OutStream *) stream)->write(buffer, bytes);
+	return ((ucmhal_out *) stream)->me->write(buffer, bytes);
 }
 
 int out_get_render_position(const struct audio_stream_out *stream,
 							uint32_t *dsp_frames) {
-	return ((const OutStream *) stream)->get_render_position(dsp_frames);
+	return ((const OutStream *)((ucmhal_out *)stream)->me)->
+		get_render_position(dsp_frames);
 }
 
 OutStream::OutStream(Dev &dev,
@@ -96,26 +99,25 @@ OutStream::OutStream(Dev &dev,
 					 audio_output_flags_t flags,
 					 struct audio_config *config) :
 	mDev(dev), mUcm(ucm), mStandby(true), mDevices(devices), mFlags(flags) {
-	// C-style cast would save couple of cycles
-	audio_stream_out *stream = reinterpret_cast<audio_stream_out *>(this);
-	memset(stream, 0, sizeof(stream));
+	memset(&m_out, 0, sizeof(m_out));
 
-	common.get_sample_rate = out_get_sample_rate;
-	common.set_sample_rate = out_set_sample_rate;
-	common.get_buffer_size = out_get_buffer_size;
-	common.get_channels = out_get_channels;
-	common.get_format = out_get_format;
-	common.set_format = out_set_format;
-	common.standby = out_standby;
-	common.dump = out_dump;
-	common.set_parameters = out_set_parameters;
-	common.get_parameters = out_get_parameters;
-	common.add_audio_effect = out_add_audio_effect;
-	common.remove_audio_effect = out_remove_audio_effect;
-	stream->get_latency = out_get_latency;
-	stream->set_volume = out_set_volume;
-	stream->write = out_write;
-	stream->get_render_position = out_get_render_position;
+	m_out.android_out.common.get_sample_rate = out_get_sample_rate;
+	m_out.android_out.common.set_sample_rate = out_set_sample_rate;
+	m_out.android_out.common.get_buffer_size = out_get_buffer_size;
+	m_out.android_out.common.get_channels = out_get_channels;
+	m_out.android_out.common.get_format = out_get_format;
+	m_out.android_out.common.set_format = out_set_format;
+	m_out.android_out.common.standby = out_standby;
+	m_out.android_out.common.dump = out_dump;
+	m_out.android_out.common.set_parameters = out_set_parameters;
+	m_out.android_out.common.get_parameters = out_get_parameters;
+	m_out.android_out.common.add_audio_effect = out_add_audio_effect;
+	m_out.android_out.common.remove_audio_effect = out_remove_audio_effect;
+	m_out.android_out.get_latency = out_get_latency;
+	m_out.android_out.set_volume = out_set_volume;
+	m_out.android_out.write = out_write;
+	m_out.android_out.get_render_position = out_get_render_position;
+	m_out.me = this;
 
 	uh_assert_se(mUcm.findEntry(mDev.mMode, mDevices, mFlags, mEntry));
 
@@ -216,7 +218,7 @@ int OutStream::set_volume(float left, float right) {
 
 ssize_t OutStream::write(const void* buffer, size_t bytes) {
 	int ret;
-	size_t frame_size = audio_stream_frame_size(&common);
+	size_t frame_size = audio_stream_frame_size(&audio_stream_out()->common);
 	size_t out_frames = bytes / frame_size;
 	bool force_input_standby = false;
 	int kernel_frames;
@@ -261,8 +263,8 @@ do_over:
 
 exit:
 	if (ret != 0) {
-		unsigned int usecs = bytes * 1000000 / audio_stream_frame_size(&common) /
-			out_get_sample_rate(&common);
+		unsigned int usecs = bytes * 1000000 / frame_size /
+			out_get_sample_rate(&audio_stream_out()->common);
 		if (usecs >= 1000000L) {
 			usecs = 999999L;
 		}
@@ -333,7 +335,7 @@ int OutStream::modeUpdate(audio_mode_t mode) {
 			return 0;
 		if (mUcm.changeStandby(mEntry, newEntry))
 			standby();
-		else 
+		else
 			mUcm.deactivateEntry(mEntry);
 		mUcm.deactivateEntry(mEntry);
 	}

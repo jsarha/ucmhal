@@ -133,29 +133,29 @@ Dev::Dev(const hw_module_t* module) :
 	mInitStatus(false),
 	mMode(AUDIO_MODE_NORMAL),
 	mParameters(supportedParameters) {
-	memset(&mdev, 0, sizeof(mdev));
+	memset(&m_dev, 0, sizeof(m_dev));
 
-	mdev.android_dev.common.tag = HARDWARE_DEVICE_TAG;
-	mdev.android_dev.common.version = AUDIO_DEVICE_API_VERSION_CURRENT;
-	mdev.android_dev.common.module = (struct hw_module_t *) module;
-	mdev.android_dev.common.close = adev_close;
+	m_dev.android_dev.common.tag = HARDWARE_DEVICE_TAG;
+	m_dev.android_dev.common.version = AUDIO_DEVICE_API_VERSION_CURRENT;
+	m_dev.android_dev.common.module = (struct hw_module_t *) module;
+	m_dev.android_dev.common.close = adev_close;
 
-	mdev.android_dev.get_supported_devices = adev_get_supported_devices;
-	mdev.android_dev.init_check = adev_init_check;
-	mdev.android_dev.set_voice_volume = adev_set_voice_volume;
-	mdev.android_dev.set_master_volume = adev_set_master_volume;
-	mdev.android_dev.set_mode = adev_set_mode;
-	mdev.android_dev.set_mic_mute = adev_set_mic_mute;
-	mdev.android_dev.get_mic_mute = adev_get_mic_mute;
-	mdev.android_dev.set_parameters = adev_set_parameters;
-	mdev.android_dev.get_parameters = adev_get_parameters;
-	mdev.android_dev.get_input_buffer_size = adev_get_input_buffer_size;
-	mdev.android_dev.open_output_stream = adev_open_output_stream;
-	mdev.android_dev.close_output_stream = adev_close_output_stream;
-	mdev.android_dev.open_input_stream = adev_open_input_stream;
-	mdev.android_dev.close_input_stream = adev_close_input_stream;
-	mdev.android_dev.dump = adev_dump;
-	mdev.me = this;
+	m_dev.android_dev.get_supported_devices = adev_get_supported_devices;
+	m_dev.android_dev.init_check = adev_init_check;
+	m_dev.android_dev.set_voice_volume = adev_set_voice_volume;
+	m_dev.android_dev.set_master_volume = adev_set_master_volume;
+	m_dev.android_dev.set_mode = adev_set_mode;
+	m_dev.android_dev.set_mic_mute = adev_set_mic_mute;
+	m_dev.android_dev.get_mic_mute = adev_get_mic_mute;
+	m_dev.android_dev.set_parameters = adev_set_parameters;
+	m_dev.android_dev.get_parameters = adev_get_parameters;
+	m_dev.android_dev.get_input_buffer_size = adev_get_input_buffer_size;
+	m_dev.android_dev.open_output_stream = adev_open_output_stream;
+	m_dev.android_dev.close_output_stream = adev_close_output_stream;
+	m_dev.android_dev.open_input_stream = adev_open_input_stream;
+	m_dev.android_dev.close_input_stream = adev_close_input_stream;
+	m_dev.android_dev.dump = adev_dump;
+	m_dev.me = this;
 
 	if (mUcm.loadConfiguration())
 		return;
@@ -175,14 +175,14 @@ int Dev::open_output_stream(audio_io_handle_t handle,
 	OutStream *out = new OutStream(*this, mUcm, handle, devices, flags, config);
 	if (!out)
 		return -ENOMEM;
-	*stream_out = reinterpret_cast<audio_stream_out *>(out);
 	mOutStreams.insert(out);
+	*stream_out = out->audio_stream_out();
 	return 0;
 }
 
 void Dev::close_output_stream(struct audio_stream_out *stream) {
 	AutoMutex lock(mLock);
-	OutStream *out = (OutStream *) stream;
+	OutStream *out = ((ucmhal_out *) stream)->me;
 	uh_assert_se(1 == mOutStreams.erase(out));
 	delete out;
 }
@@ -251,13 +251,13 @@ int Dev::open_input_stream(audio_io_handle_t handle,
 	if (!in)
 		return -ENOMEM;
 	mInStreams.insert(in);
-	*stream_in = reinterpret_cast<audio_stream_in *>(in);
+	*stream_in = in->audio_stream_in();
 	return 0;
 }
 
 void Dev::close_input_stream(struct audio_stream_in *stream) {
 	AutoMutex lock(mLock);
-	InStream *in = (InStream *) stream;
+	InStream *in = ((ucmhal_in *) stream)->me;
 	uh_assert_se(1 == mInStreams.erase(in));
 	delete in;
 }

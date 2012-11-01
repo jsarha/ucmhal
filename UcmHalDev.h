@@ -47,10 +47,10 @@ public:
 	~Dev();
 	// Forward methods from audio_hw_device struct
 	int open_output_stream(audio_io_handle_t handle,
-						   audio_devices_t devices,
-						   audio_output_flags_t flags,
-						   struct audio_config *config,
-						   struct audio_stream_out **stream_out);
+	                       audio_devices_t devices,
+	                       audio_output_flags_t flags,
+	                       struct audio_config *config,
+	                       struct audio_stream_out **stream_out);
 	void close_output_stream(struct audio_stream_out *stream);
 	int set_parameters(const char *kvpairs);
 	char * get_parameters(const char *keys) const;
@@ -62,19 +62,19 @@ public:
 	int get_mic_mute(bool *state) const;
 	size_t get_input_buffer_size(const audio_config *config) const;
 	int open_input_stream(audio_io_handle_t handle,
-						  audio_devices_t devices,
-						  struct audio_config *config,
-						  struct audio_stream_in **stream_in);
+	                      audio_devices_t devices,
+	                      struct audio_config *config,
+	                      struct audio_stream_in **stream_in);
 	void close_input_stream(struct audio_stream_in *stream);
 	uint32_t get_supported_devices() const;
 	int dump(int fd) const;
 
-	audio_hw_device *audio_hw_device() { return &mdev.android_dev; }
+	audio_hw_device *audio_hw_device() { return &m_dev.android_dev; }
 
 	friend class OutStream;
 	friend class InStream;
 private:
-	ucmhal_dev mdev;
+	ucmhal_dev m_dev;
 	Mutex mLock;
 	MacroMap mMM;
 	UseCaseMgr mUcm;

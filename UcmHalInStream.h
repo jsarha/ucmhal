@@ -39,6 +39,12 @@ namespace UcmHal {
 
 class Dev;
 class UseCaseMgr;
+class InStream;
+
+struct ucmhal_in {
+	audio_stream_in android_in;
+	InStream *me;
+};
 
 class InStream : public audio_stream_in {
 public:
@@ -65,10 +71,11 @@ public:
 	ssize_t read(void* buffer, size_t bytes);
 	uint32_t get_input_frames_lost();
 
+	audio_stream_in *audio_stream_in() { return &m_in.android_in; }
 	static int check_parameters(audio_config_t *config);
-
 	int modeUpdate(audio_mode_t mode);
 private:
+	ucmhal_in m_in;
 	Dev &mDev;
 	UseCaseMgr &mUcm;
 	Mutex mLock;
