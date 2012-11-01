@@ -32,7 +32,7 @@ extern "C" {
 namespace UcmHal {
 
 Parameters::Parameters(const char **supported) : mSupported(supported) {
-	uh_assert_se(mparms = str_parms_create());
+	uh_assert_se(mparms = str_parms_create_str(";"));
 }
 
 Parameters::~Parameters() {
@@ -49,8 +49,9 @@ int Parameters::update(const char *kvpairs, std::list<const char *> *changed) {
 	    char nvalue[32];
 	    ret = str_parms_get_str(parms, mSupported[i], nvalue, sizeof(nvalue));
 	    if (ret >= 0) {
-		    char ovalue[32];
-		    ret = str_parms_get_str(mparms, mSupported[i], ovalue, sizeof(ovalue));
+		    char ovalue[32] = { '\0' };
+		    ret = str_parms_get_str(mparms, mSupported[i], ovalue,
+		                            sizeof(ovalue));
 		    if (ret < 0 || 0 != strcmp(nvalue, ovalue)) {
 			    LOGV("Parameter \"%s\" changed from \"%s\" to \"%s\"",
 			         mSupported[i], ovalue, nvalue);
@@ -65,14 +66,18 @@ int Parameters::update(const char *kvpairs, std::list<const char *> *changed) {
     return 0;
 }
 
-string *Parameters::get(const char *key, string &value) const {
+string &Parameters::get(const char *key, string &value) const {
 	int ret;
 	char val[32];
 	value.clear();
 	ret = str_parms_get_str(mparms, key, val, sizeof(value));
 	if (ret >= 0)
 		value = val;
-	return &value;
+	return value;
+}
+
+void Parameters::set(const char *key, const char *value) {
+	uh_assert_se(0 == str_parms_add_str(mparms, key, value));
 }
 
 char *Parameters::toStr() const {

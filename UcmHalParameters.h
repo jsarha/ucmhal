@@ -38,7 +38,8 @@ public:
 	~Parameters();
 
 	int update(const char *kvpairs, std::list<const char *> *changed = NULL);
-	string *get(const char *key, string &value) const;
+	string &get(const char *key, string &value) const;
+	void set(const char *key, const char *value);
 	char *toStr() const;
 private:
 	const char **mSupported;
@@ -48,15 +49,16 @@ private:
 template<class T>
 class Hook {
 public:
-	Hook(T *obj, void (T::*hook)(const char *), const char *key) :
+	Hook() : mObj(NULL), mHook(NULL), mKey(NULL) {}
+	Hook(T *obj, void (T::*hook)(), const char *key) :
 		mObj(obj), mHook(hook), mKey(key) {}
 	void fire() {
 		(mObj->*mHook)();
 	}
 private:
-	const char *mKey;
 	T *mObj;
 	void (T::*mHook)();
+	const char *mKey;
 };
 
 template<class T>
@@ -64,8 +66,12 @@ class HookedParameters : public Parameters {
 public:
 	HookedParameters(const char *supported[]) : Parameters(supported) {}
 
-	void setHook(T *obj, void (T::*hook)(const char *), const char *key) {
-		mHooks.insert(Hook<T>(obj, hook, key));
+	void setHook(T *obj, void (T::*hook)(), const char *key) {
+		mHooks[key] = Hook<T>(obj, hook, key);
+	}
+
+	void clearHook(const char *key) {
+		mHooks.erase(key);
 	}
 
 	int updateTrigger(const char *kvpairs) {

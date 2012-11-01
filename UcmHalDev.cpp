@@ -160,6 +160,9 @@ Dev::Dev(const hw_module_t* module) :
 	if (mUcm.loadConfiguration())
 		return;
 
+	mParameters.setHook(this, &Dev::screenStateHook,
+	                    AUDIO_PARAMETER_KEY_SCREEN_STATE);
+
 	mInitStatus = true;
 }
 
@@ -188,7 +191,7 @@ void Dev::close_output_stream(struct audio_stream_out *stream) {
 }
 
 int Dev::set_parameters(const char *kvpairs) {
-    LOGFUNC("%s(%p, %s)", this, kvpairs);
+	LOGFUNC("%s(%p, %s)", __func__, this, kvpairs);
     mParameters.update(kvpairs);
     return 0;
 }
@@ -269,6 +272,12 @@ uint32_t Dev::get_supported_devices() const {
 int Dev::dump(int fd) const {
 	LOGE("Dump-method not implemented");
 	return 0;
+}
+
+void Dev::screenStateHook() {
+	string value;
+	LOGE("New \"%s\" value \"%s\"", AUDIO_PARAMETER_KEY_SCREEN_STATE,
+	     mParameters.get(AUDIO_PARAMETER_KEY_SCREEN_STATE, value).c_str());
 }
 
 }; // namespace UcmHal
