@@ -36,6 +36,7 @@ TINYALSAOBJS = $(TINYALSA)/pcm.o $(TINYALSA)/mixer.o
 CFLAGS = -O0 -g -Wall \
 		 -DOMAP_ENHANCEMENT \
 	  	 -DALSA_USE_CASE_DIR=\"/system/usr/share/alsa/ucm\" \
+		 -DNO_ANDROID_STL=1 \
 		 -DHAVE_PTHREADS=1 \
 		 -I test \
 		 -I $(TINYALSA)/include \
