@@ -23,16 +23,17 @@
 
 #include <tinyxml.h>
 
-#include <list>
-
 #include <hardware/hardware.h>
 #include <system/audio.h>
 #include <hardware/audio.h>
 
 #include "use-case.h"
 
-#include "UcmHalMacroMap.h"
 #include "UcmHalTypes.h"
+
+#include <list>
+
+#include "UcmHalMacroMap.h"
 
 namespace UcmHal {
 
@@ -41,12 +42,12 @@ public:
 	UseCaseMapEntry() : mMode(0), mDevices(0), mDevicesMask(0), mActive(0) {}
 	int match(const int mode, const int devices) {
 		return (mode == mMode &&
-				(mDevices & mDevicesMask) == (devices & mDevicesMask));
+		        (mDevices & mDevicesMask) == (devices & mDevicesMask));
 	}
 	const string &dump();
-	const int equal(UseCaseMapEntry &o) {
+	int equal(UseCaseMapEntry &o) const {
 		return (mUcmVerb == o.mUcmVerb && mUcmDevice == o.mUcmDevice &&
-				mUcmModifier == o.mUcmModifier);
+		        mUcmModifier == o.mUcmModifier);
 	}
 	bool active() { return mActive; }
 	friend class UseCaseMgr;
@@ -84,15 +85,15 @@ public:
 
 	int loadConfiguration();
 	int findEntry(audio_mode_t mode, audio_devices_t devices,
-				  audio_output_flags_t flags, uclist_t::iterator &entry);
+	              audio_output_flags_t flags, uclist_t::iterator &entry);
 	int activateEntry(const uclist_t::iterator &entry);
 	int deactivateEntry(const uclist_t::iterator &entry);
 
 	int getPlaybackCard(const uclist_t::iterator &entry);
 	int getPlaybackPort(const uclist_t::iterator &entry);
 
-	int changeStandby(const uclist_t::iterator &o, 
-					  const uclist_t::iterator &n) const;
+	int changeStandby(const uclist_t::iterator &o,
+	                  const uclist_t::iterator &n) const;
 
 	int getSupportedDeivices() const { return mAllDevices; }
 	const uclist_t::const_iterator noEntry() const { return mUCList.end(); }

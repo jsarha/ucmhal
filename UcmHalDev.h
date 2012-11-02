@@ -26,8 +26,8 @@
 #include <system/audio.h>
 #include <hardware/audio.h>
 
-#include "UcmHalUseCaseMgr.h"
 #include "UcmHalTypes.h"
+#include "UcmHalUseCaseMgr.h"
 #include "UcmHalParameters.h"
 
 namespace UcmHal {

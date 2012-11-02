@@ -22,7 +22,8 @@
 #include <cutils/log.h>
 
 #include <string.h>
-#include <iostream>
+
+#include "UcmHalTypes.h"
 #include <map>
 #include <utility>
 

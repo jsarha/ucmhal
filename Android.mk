@@ -25,14 +25,33 @@ include $(CLEAR_VARS)
 # Should change this so the enable variable gets used as the name?
 LOCAL_MODULE := audio.primary.ucmhal
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
-LOCAL_SRC_FILES := audio_hw.c
+LOCAL_SRC_FILES := \
+	audio_hw.c \
+	use-case.c \
+	alsa-shim.c \
+	alsa-control.c \
+	UcmHalDev.cpp \
+	UcmHalUseCaseMgr.cpp \
+	UcmHalMacroMap.cpp \
+	UcmHalOutStream.cpp \
+	UcmHalInStream.cpp \
+	UcmHalParameters.cpp
+
 LOCAL_C_INCLUDES += \
 	external/tinyalsa/include \
+	external/tinyxml \
 	system/media/audio_utils/include \
-	system/media/audio_effects/include
+	system/media/audio_effects/include \
+
 LOCAL_SHARED_LIBRARIES := liblog libcutils libtinyalsa libaudioutils \
-	libdl libexpat
+	libdl libexpat libtinyxml
+LOCAL_STATIC_LIBRARIES := libastl
 LOCAL_MODULE_TAGS := optional
+LOCAL_CFLAGS += -DALSA_USE_CASE_DIR=\"/system/usr/share/alsa/ucm\"
+
+# Use STLport
+LOCAL_C_INCLUDES += external/stlport/stlport
+LOCAL_SHARED_LIBRARIES += libstlport
 
 include $(BUILD_SHARED_LIBRARY)
 

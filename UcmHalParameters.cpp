@@ -41,29 +41,29 @@ Parameters::~Parameters() {
 
 int Parameters::update(const char *kvpairs, std::list<const char *> *changed) {
 	struct str_parms *parms = str_parms_create_str(kvpairs);
-    uh_assert(parms);
-    int parms_changed = 0;
+	uh_assert(parms);
+	int parms_changed = 0;
 
-    for (int i=0; mSupported[i]; i++) {
-	    int ret;
-	    char nvalue[32];
-	    ret = str_parms_get_str(parms, mSupported[i], nvalue, sizeof(nvalue));
-	    if (ret >= 0) {
-		    char ovalue[32] = { '\0' };
-		    ret = str_parms_get_str(mparms, mSupported[i], ovalue,
-		                            sizeof(ovalue));
-		    if (ret < 0 || 0 != strcmp(nvalue, ovalue)) {
-			    LOGV("Parameter \"%s\" changed from \"%s\" to \"%s\"",
-			         mSupported[i], ovalue, nvalue);
-			    str_parms_add_str(mparms, mSupported[i], nvalue);
-			    if (changed)
-				    changed->push_back(mSupported[i]);
-			    parms_changed++;
-		    }
-	    }
-    }
-    str_parms_destroy(parms);
-    return 0;
+	for (int i=0; mSupported[i]; i++) {
+		int ret;
+		char nvalue[32];
+		ret = str_parms_get_str(parms, mSupported[i], nvalue, sizeof(nvalue));
+		if (ret >= 0) {
+			char ovalue[32] = { '\0' };
+			ret = str_parms_get_str(mparms, mSupported[i], ovalue,
+			                        sizeof(ovalue));
+			if (ret < 0 || 0 != strcmp(nvalue, ovalue)) {
+				ALOGV("Parameter \"%s\" changed from \"%s\" to \"%s\"",
+				      mSupported[i], ovalue, nvalue);
+				str_parms_add_str(mparms, mSupported[i], nvalue);
+				if (changed)
+					changed->push_back(mSupported[i]);
+				parms_changed++;
+			}
+		}
+	}
+	str_parms_destroy(parms);
+	return 0;
 }
 
 string &Parameters::get(const char *key, string &value) const {

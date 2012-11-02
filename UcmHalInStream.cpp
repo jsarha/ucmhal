@@ -193,18 +193,18 @@ uint32_t InStream::get_input_frames_lost() {
 int InStream::modeUpdate(audio_mode_t mode) {
 // TODO
 /*
-	AutoMutex lock(mLock);
-	uclist_t::iterator newEntry;
-	uh_assert_se(mUcm.findEntry(mode, mDevices, mFlags, newEntry));
-	if (mEntry->active()) {
-		if (mEntry->equal(*newEntry))
-			return 0;
-		if (mUcm.changeStandby(mEntry, newEntry))
-			standby();
-		else
-			mUcm.deactivateEntry(mEntry);
-		mUcm.deactivateEntry(mEntry);
-	}
+  AutoMutex lock(mLock);
+  uclist_t::iterator newEntry;
+  uh_assert_se(mUcm.findEntry(mode, mDevices, mFlags, newEntry));
+  if (mEntry->active()) {
+  if (mEntry->equal(*newEntry))
+  return 0;
+  if (mUcm.changeStandby(mEntry, newEntry))
+  standby();
+  else
+  mUcm.deactivateEntry(mEntry);
+  mUcm.deactivateEntry(mEntry);
+  }
 */
 	return 0;
 }

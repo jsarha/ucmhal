@@ -21,7 +21,7 @@
 
 extern "C"
 int ucmhal_adev_open(const hw_module_t* module, const char* name,
-					 hw_device_t** device)
+                     hw_device_t** device)
 {
 	if (strcmp(name, AUDIO_HARDWARE_INTERFACE) != 0)
 		return -EINVAL;
@@ -43,7 +43,7 @@ int ucmhal_adev_open(const hw_module_t* module, const char* name,
 namespace UcmHal {
 
 static int adev_close(hw_device_t *dev) {
-	LOGE("Closing audio device");
+	ALOGE("Closing audio device");
 	delete ((ucmhal_dev *)dev)->me;
 	return 0;
 }
@@ -96,7 +96,7 @@ static int adev_get_mic_mute(const audio_hw_device *dev, bool *state) {
 }
 
 static size_t adev_get_input_buffer_size(const audio_hw_device *dev,
-										 const audio_config *config) {
+                                         const audio_config *config) {
 	return ((const Dev *)((ucmhal_dev *)dev)->me)->get_input_buffer_size(config);
 }
 
@@ -192,8 +192,8 @@ void Dev::close_output_stream(struct audio_stream_out *stream) {
 
 int Dev::set_parameters(const char *kvpairs) {
 	LOGFUNC("%s(%p, %s)", __func__, this, kvpairs);
-    mParameters.update(kvpairs);
-    return 0;
+	mParameters.update(kvpairs);
+	return 0;
 }
 
 char * Dev::get_parameters(const char *keys) const {
@@ -218,10 +218,10 @@ int Dev::set_mode(audio_mode_t mode) {
 	AutoMutex lock(mLock);
 	if (mMode != mode) {
 		for (OutStreamSet_t::iterator i = mOutStreams.begin();
-			 i != mOutStreams.begin(); i++)
+		     i != mOutStreams.begin(); i++)
 			(*i)->modeUpdate(mode);
 		for (InStreamSet_t::iterator i = mInStreams.begin();
-			 i != mInStreams.begin(); i++)
+		     i != mInStreams.begin(); i++)
 			(*i)->modeUpdate(mode);
 	}
 	return 0;
@@ -240,13 +240,13 @@ size_t Dev::get_input_buffer_size(const audio_config *config) const {
 }
 
 int Dev::open_input_stream(audio_io_handle_t handle,
-						   audio_devices_t devices,
-						   struct audio_config *config,
-						   struct audio_stream_in **stream_in) {
+                           audio_devices_t devices,
+                           struct audio_config *config,
+                           struct audio_stream_in **stream_in) {
 	if (InStream::check_parameters(config)) {
-		LOGE("open_input_stream: Invalid input parameters (%dHz,%dch,0x08x)",
-			 config->sample_rate, popcount(config->channel_mask),
-			 config->format);
+		ALOGE("open_input_stream: Invalid input parameters (%dHz,%dch,0x%08x)",
+		      config->sample_rate, popcount(config->channel_mask),
+		      config->format);
 		return -EINVAL;
 	}
 	AutoMutex lock(mLock);
@@ -270,14 +270,14 @@ uint32_t Dev::get_supported_devices() const {
 }
 
 int Dev::dump(int fd) const {
-	LOGE("Dump-method not implemented");
+	ALOGE("Dump-method not implemented");
 	return 0;
 }
 
 void Dev::screenStateHook() {
 	string value;
-	LOGE("New \"%s\" value \"%s\"", AUDIO_PARAMETER_KEY_SCREEN_STATE,
-	     mParameters.get(AUDIO_PARAMETER_KEY_SCREEN_STATE, value).c_str());
+	ALOGE("New \"%s\" value \"%s\"", AUDIO_PARAMETER_KEY_SCREEN_STATE,
+	      mParameters.get(AUDIO_PARAMETER_KEY_SCREEN_STATE, value).c_str());
 }
 
 }; // namespace UcmHal

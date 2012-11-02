@@ -106,18 +106,18 @@ int ah_card_get_name(int card, char *str, size_t strlen)
 
 	fd = ah_control_open(card, O_RDONLY);
 	if (fd < 0) {
-		LOGE("ah_control_open() failed");
+		ALOGE("ah_control_open() failed");
 		rv = -errno;
 		goto end;
 	}
 
 	rv = ah_card_get_info(fd, &info);
 	if (rv) {
-		LOGE("error %d in getting card info", errno);
+		ALOGE("error %d in getting card info", errno);
 		rv = -errno;
 		goto card_err;
 	}
-	LOGE("card %d info->name = %s", card, info.id);
+	ALOGE("card %d info->name = %s", card, info.id);
 	strncpy(str, (char*)info.id, strlen);
 card_err:
 	ah_control_close(fd);
@@ -140,14 +140,14 @@ int ah_card_find_by_name(const char* name)
 	int k;
 	int match = 0;
 	if (1 == sscanf(name, "hw:%d", &k) && k < cards) {
-		LOGD("Name '%s' refers to card %d", name, k);
+		ALOGD("Name '%s' refers to card %d", name, k);
 		return k;
 	}
 
-	LOGD("%s() looking for %s", __func__, name);
+	ALOGD("%s() looking for %s", __func__, name);
 	for (k = 0 ; k < cards ; ++k) {
 		ah_card_get_name(k, cur, sizeof(cur));
-		LOGD("Comparing to '%s'", cur);
+		ALOGD("Comparing to '%s'", cur);
 		if ( 0 == strcmp(cur, name) ) {
 			match = 1;
 			break;
@@ -195,7 +195,7 @@ int ah_control_open(int card, int mode)
 	char control_fn[sizeof(SND_CONTROL_TEMPLATE) + 32] = "";
 	int fd;
 	card_control_path(card, control_fn, sizeof(control_fn));
-	LOGE("Trying to open %s (card = %d)", control_fn, card);
+	ALOGE("Trying to open %s (card = %d)", control_fn, card);
 	fd = open(control_fn, mode);
 	return fd;
 }

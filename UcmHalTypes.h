@@ -22,6 +22,13 @@
 #include <sys/types.h>
 #include <string.h>
 
+#ifndef NO_ANDROID_STL
+#define _STLP_HAS_INCLUDE_NEXT  1
+#define _STLP_USE_MALLOC   1
+#define _STLP_USE_NO_IOSTREAMS  1
+#include <stl/config/_android.h>
+#endif
+
 #include <set>
 #include <utility>
 #include <string>
@@ -43,7 +50,7 @@ public:
 		pthread_mutex_init(&mMutex, &attr);
 	}
 	inline ~Mutex() { pthread_mutex_destroy(&mMutex); }
-	inline int lock() { return pthread_mutex_lock(&mMutex); } 
+	inline int lock() { return pthread_mutex_lock(&mMutex); }
 	inline int unlock() { return pthread_mutex_unlock(&mMutex); }
 private:
 	pthread_mutex_t mMutex;
@@ -62,7 +69,7 @@ private:
 	Mutex &mMutex;
 };
 
-typedef std::basic_string<char> string;
+typedef std::string string;
 
 struct strcomp {
 	bool operator()(const char *a, const char *b) const {

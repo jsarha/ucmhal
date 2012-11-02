@@ -25,15 +25,15 @@
 #include <cutils/log.h>
 
 #include <string.h>
-#include <iostream>
-#include <map>
-#include <utility>
 
 #include <hardware/hardware.h>
 #include <system/audio.h>
 #include <hardware/audio.h>
 
 #include "UcmHalTypes.h"
+
+#include <map>
+#include <utility>
 
 namespace UcmHal {
 

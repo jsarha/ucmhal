@@ -22,11 +22,12 @@
 #include <cutils/log.h>
 
 #include <string.h>
+
+#include "UcmHalTypes.h"
+
 #include <list>
 #include <map>
 #include <utility>
-
-#include "UcmHalTypes.h"
 
 struct str_parms;
 

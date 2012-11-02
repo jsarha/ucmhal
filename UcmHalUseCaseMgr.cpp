@@ -18,7 +18,9 @@
 #define LOG_NDEBUG 0
 
 #include <string.h>
-#include <iostream>
+
+#include "UcmHalTypes.h"
+
 #include <map>
 #include <utility>
 
@@ -35,9 +37,9 @@ const string &UseCaseMapEntry::dump() {
 
 	char buf[1024];
 	snprintf(buf, sizeof(buf),
-			 "mode %d devices 0x%08x mask 0x%08x -> verb '%s' dev '%s' mod '%s'",
-			 mMode, mDevices, mDevicesMask, mUcmVerb.c_str(),
-			 mUcmDevice.c_str(), mUcmModifier.c_str());
+	         "mode %d devices 0x%08x mask 0x%08x -> verb '%s' dev '%s' mod '%s'",
+	         mMode, mDevices, mDevicesMask, mUcmVerb.c_str(),
+	         mUcmDevice.c_str(), mUcmModifier.c_str());
 
 	mDump = buf;
 
@@ -72,12 +74,12 @@ int UseCaseMgr::loadConfiguration() {
 }
 
 int UseCaseMgr::findEntry(audio_mode_t mode, audio_devices_t devices,
-						  audio_output_flags_t flags, uclist_t::iterator &i) {
-	LOGD("mode 0x%08x dev 0x%08x flags 0x%08x", mode, devices, flags);
+                          audio_output_flags_t flags, uclist_t::iterator &i) {
+	ALOGD("mode 0x%08x dev 0x%08x flags 0x%08x", mode, devices, flags);
 
 	for (i = mUCList.begin(); i != mUCList.end(); ++i) {
 		if (i->match(mode, devices)) {
-			LOGD("Found: %s (active: %d)", i->dump().c_str(), i->mActive);
+			ALOGD("Found: %s (active: %d)", i->dump().c_str(), i->mActive);
 			return 0;
 		}
 	}
@@ -85,30 +87,30 @@ int UseCaseMgr::findEntry(audio_mode_t mode, audio_devices_t devices,
 }
 
 int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
-	LOGE("%s(%s)", __func__, i->dump().c_str());
+	ALOGE("%s(%s)", __func__, i->dump().c_str());
 	uh_assert(i != noEntry());
 	if (i->mActive) {
-		LOGE("Entry %s already active", i->dump().c_str());
+		ALOGE("Entry %s already active", i->dump().c_str());
 		return -1;
 	}
 	AutoMutex lock(mLock);
 	if (mActiveVerb.empty() || mActiveVerb == SND_USE_CASE_VERB_INACTIVE) {
-		LOGV("Activating verb '%s'", i->mUcmVerb.c_str());
+		ALOGV("Activating verb '%s'", i->mUcmVerb.c_str());
 		uh_assert_se(!snd_use_case_set_verb(mucm, i->mUcmVerb.c_str()));
 		// Only enable devices when enabling a verb
 		// TODO more complere support would maintain a union of devices from
 		//		active usecases.
-		LOGV("Activating device '%s'", i->mUcmDevice.c_str());
+		ALOGV("Activating device '%s'", i->mUcmDevice.c_str());
 		uh_assert_se(!snd_use_case_enable_device(mucm, i->mUcmDevice.c_str()));
 	}
 	else if (mActiveVerb != i->mUcmVerb) {
-		LOGE("Request for conflicting verb '%s' current '%s'",
-			 i->mUcmVerb.c_str(), mActiveVerb.c_str());
+		ALOGE("Request for conflicting verb '%s' current '%s'",
+		      i->mUcmVerb.c_str(), mActiveVerb.c_str());
 		return -1;
 	}
 
 	if (!i->mUcmModifier.empty()) {
-		LOGV("Activating modifier '%s'", i->mUcmModifier.c_str());
+		ALOGV("Activating modifier '%s'", i->mUcmModifier.c_str());
 		uh_assert_se(!snd_use_case_enable_modifier(mucm, i->mUcmModifier.c_str()));
 	}
 
@@ -119,9 +121,9 @@ int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
 }
 
 int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
-	LOGE("%s(%s)", __func__, i->dump().c_str());
+	ALOGE("%s(%s)", __func__, i->dump().c_str());
 	if (!i->mActive) {
-		LOGE("Entry %s already inactive", i->dump().c_str());
+		ALOGE("Entry %s already inactive", i->dump().c_str());
 		return -1;
 	}
 	AutoMutex lock(mLock);
@@ -129,7 +131,7 @@ int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
 	uh_assert(mActiveUseCaseCount >= 0);
 	if (mActiveUseCaseCount == 0) {
 		// Last active entry, just setting verb to "Inactive" should be enough
-		LOGV("Deactivating current verb '%s'", mActiveVerb.c_str());
+		ALOGV("Deactivating current verb '%s'", mActiveVerb.c_str());
 		uh_assert_se(!snd_use_case_set_verb(mucm, SND_USE_CASE_VERB_INACTIVE));
 		mActiveVerb = SND_USE_CASE_VERB_INACTIVE;
 	}
@@ -137,8 +139,8 @@ int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
 		// TODO more complere support would maintain a union of devices from
 		//		active usecases.
 		if (!i->mUcmModifier.empty()) {
-			LOGV("Deactivating modifier '%s'", i->mUcmModifier.c_str());
-		uh_assert_se(
+			ALOGV("Deactivating modifier '%s'", i->mUcmModifier.c_str());
+			uh_assert_se(
 				!snd_use_case_disable_modifier(mucm, i->mUcmModifier.c_str()));
 		}
 	}
@@ -157,13 +159,13 @@ int UseCaseMgr::getPlaybackPort(const uclist_t::iterator &i) {
 	return snd_use_case_get_mod_playback_pcm(mucm, i->mUcmModifier.c_str());
 }
 
-int UseCaseMgr::changeStandby(const uclist_t::iterator &o, 
-							  const uclist_t::iterator &n) const {
+int UseCaseMgr::changeStandby(const uclist_t::iterator &o,
+                              const uclist_t::iterator &n) const {
 	return 1;
 	/* Could be something like bellow, but let's suspend every time for now
-	return (o.mUcmVerb != n.mUcmVerb || 
-			snd_use_case_get_mod_playback_pcm(mucm, n->mUcmModifier.c_str()) !=
-			snd_use_case_get_mod_playback_pcm(mucm, o->mUcmModifier.c_str()));
+	   return (o.mUcmVerb != n.mUcmVerb ||
+	   snd_use_case_get_mod_playback_pcm(mucm, n->mUcmModifier.c_str()) !=
+	   snd_use_case_get_mod_playback_pcm(mucm, o->mUcmModifier.c_str()));
 	*/
 }
 
@@ -171,37 +173,37 @@ int UseCaseMgr::loadUseCaseMap(const char *file) {
 	TiXmlDocument xDoc;
 	TiXmlElement *root, *e;
 
-	LOGE("%s(file=%s)", __func__, file);
+	ALOGE("%s(file=%s)", __func__, file);
 
 	if (!xDoc.LoadFile(file)) {
-		LOGE("Could not open and parse file %s", file);
+		ALOGE("Could not open and parse file %s", file);
 		return 1;
 	}
 
 	root = xDoc.RootElement();
 
 	if (!root) {
-		LOGE("File appears to be empty");
+		ALOGE("File appears to be empty");
 		return 1;
 	}
 
 	if (0 != strcmp(root->Value(), "android_use_case_map")) {
-		LOGE("Root element is not 'android_use_case_map'");
+		ALOGE("Root element is not 'android_use_case_map'");
 		return 1;
 	}
 
 	e = root->FirstChildElement("ucm_conf_name");
 	if (!e) {
-		LOGE("Expected element <ucm_conf_name>");
+		ALOGE("Expected element <ucm_conf_name>");
 		return 1;
 	}
 	// TODO should be more efficient to call e->ValueStr() instead of e->GetText()
 	mUcmConfName = e->GetText();
-	LOGD("UCM conf name \"%s\"", mUcmConfName.c_str());
+	ALOGD("UCM conf name \"%s\"", mUcmConfName.c_str());
 
 	e = root->FirstChildElement("use_case_table");
 	if (!e) {
-		LOGE("Expected element <use_case_table>");
+		ALOGE("Expected element <use_case_table>");
 		return 1;
 	}
 
@@ -218,7 +220,7 @@ int UseCaseMgr::loadUseCaseMap(const char *file) {
 		t = in->FirstChildElement("devices");
 		entry.mDevices = 0;
 		for (flag = t->FirstChildElement("flag"); flag;
-			 flag = flag->NextSiblingElement("flag")) {
+		     flag = flag->NextSiblingElement("flag")) {
 			entry.mDevices |= mMM.device(flag->GetText());
 		}
 		mAllDevices |= entry.mDevices;
@@ -227,7 +229,7 @@ int UseCaseMgr::loadUseCaseMap(const char *file) {
 		t = in->FirstChildElement("devices_mask");
 		entry.mDevicesMask = 0;
 		for (flag = t->FirstChildElement("flag"); flag;
-			 flag = flag->NextSiblingElement("flag")) {
+		     flag = flag->NextSiblingElement("flag")) {
 			entry.mDevicesMask |= mMM.device(flag->GetText());
 		}
 
@@ -248,7 +250,7 @@ int UseCaseMgr::loadUseCaseMap(const char *file) {
 			entry.mUcmModifier = text;
 		}
 
-		LOGV("adding %s to map", entry.dump().c_str());
+		ALOGV("adding %s to map", entry.dump().c_str());
 
 		mUCList.push_back(entry);
 	}

@@ -18,11 +18,13 @@
 #define LOG_NDEBUG 0
 
 #include <string.h>
-#include <iostream>
-#include <map>
-#include <utility>
 
 #include <system/audio.h>
+
+#include "UcmHalTypes.h"
+
+#include <map>
+#include <utility>
 
 #include "UcmHalMacroMap.h"
 
@@ -85,7 +87,7 @@ int MacroMap::device(const char *name) {
 	MacroMap_t::iterator i = mDeviceMacroMap.find(name);
 	if (i != mDeviceMacroMap.end())
 		return i->second;
-	LOGE("%s not found from macromap", name);
+	ALOGE("%s not found from macromap", name);
 	return 0;
 }
 
@@ -93,7 +95,7 @@ int MacroMap::mode(const char *name)  {
 	MacroMap_t::iterator i = mModeMacroMap.find(name);
 	if (i != mModeMacroMap.end())
 		return i->second;
-	LOGE("%s not found from macromap", name);
+	ALOGE("%s not found from macromap", name);
 	return 0;
 }
 

@@ -25,9 +25,6 @@
 #include <cutils/log.h>
 
 #include <string.h>
-#include <iostream>
-#include <map>
-#include <utility>
 
 #include <hardware/hardware.h>
 #include <system/audio.h>
@@ -35,8 +32,12 @@
 
 #include <tinyalsa/asoundlib.h>
 
-#include "UcmHalUseCaseMgr.h"
 #include "UcmHalTypes.h"
+
+#include <map>
+#include <utility>
+
+#include "UcmHalUseCaseMgr.h"
 
 namespace UcmHal {
 

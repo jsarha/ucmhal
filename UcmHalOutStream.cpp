@@ -57,18 +57,18 @@ int out_set_parameters(struct audio_stream *stream, const char *kvpairs) {
 }
 
 char * out_get_parameters(const struct audio_stream *stream,
-						  const char *keys) {
+                          const char *keys) {
 	return ((const OutStream *)((ucmhal_out *)stream)->me)->get_parameters(keys);
 }
 
 int out_add_audio_effect(const struct audio_stream *stream,
-						 effect_handle_t effect) {
+                         effect_handle_t effect) {
 	return ((const OutStream *)((ucmhal_out *)stream)->me)->
 		add_audio_effect(effect);
 }
 
 int out_remove_audio_effect(const struct audio_stream *stream,
-							effect_handle_t effect) {
+                            effect_handle_t effect) {
 	return ((const OutStream *)((ucmhal_out *)stream)->me)->
 		remove_audio_effect(effect);
 }
@@ -82,22 +82,22 @@ int out_set_volume(struct audio_stream_out *stream, float left, float right) {
 }
 
 ssize_t out_write(struct audio_stream_out *stream, const void* buffer,
-				  size_t bytes) {
+                  size_t bytes) {
 	return ((ucmhal_out *) stream)->me->write(buffer, bytes);
 }
 
 int out_get_render_position(const struct audio_stream_out *stream,
-							uint32_t *dsp_frames) {
+                            uint32_t *dsp_frames) {
 	return ((const OutStream *)((ucmhal_out *)stream)->me)->
 		get_render_position(dsp_frames);
 }
 
 OutStream::OutStream(Dev &dev,
-					 UseCaseMgr &ucm,
-					 audio_io_handle_t handle,
-					 audio_devices_t devices,
-					 audio_output_flags_t flags,
-					 struct audio_config *config) :
+                     UseCaseMgr &ucm,
+                     audio_io_handle_t handle,
+                     audio_devices_t devices,
+                     audio_output_flags_t flags,
+                     struct audio_config *config) :
 	mDev(dev), mUcm(ucm), mStandby(true), mDevices(devices), mFlags(flags) {
 	memset(&m_out, 0, sizeof(m_out));
 
@@ -275,14 +275,14 @@ exit:
 
 	if (ret == -EPIPE) {
 		/* Recover from an underrun */
-		LOGE("XRUN detected");
+		ALOGE("XRUN detected");
 		standby();
 		goto do_over;
 	}
 
 	if (force_input_standby) {
 		// TODO
-		LOGE("force_input_standby not implemented");
+		ALOGE("force_input_standby not implemented");
 	}
 
 	return bytes;
@@ -303,7 +303,7 @@ int OutStream::startStream()
 	int card = mUcm.getPlaybackCard(mEntry);
 	int port = mUcm.getPlaybackPort(mEntry);
 
-	LOGE("setting playback card=%d port=%d", card, port);
+	ALOGE("setting playback card=%d port=%d", card, port);
 
 	/* default to low power:
 	 *	NOTE: PCM_NOIRQ mode is required to dynamically scale avail_min
@@ -316,7 +316,7 @@ int OutStream::startStream()
 	mPcm = pcm_open(card, port, PCM_OUT | PCM_MMAP, &mConfig);
 
 	if (!pcm_is_ready(mPcm)) {
-		LOGE("cannot open pcm_out driver: %s", pcm_get_error(mPcm));
+		ALOGE("cannot open pcm_out driver: %s", pcm_get_error(mPcm));
 		pcm_close(mPcm);
 		mPcm = NULL;
 		return -ENOMEM;
@@ -333,7 +333,7 @@ int OutStream::modeUpdate(audio_mode_t mode) {
 	if (mEntry->equal(*newEntry))
 		return 0;
 	if (mEntry->active()) {
-		if (!mStandBy && mUcm.changeStandby(mEntry, newEntry))
+		if (!mStandby && mUcm.changeStandby(mEntry, newEntry))
 			standby();
 		else
 			mUcm.deactivateEntry(mEntry);
