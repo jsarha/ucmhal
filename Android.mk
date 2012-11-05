@@ -23,6 +23,7 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 # Should change this so the enable variable gets used as the name?
+#LOCAL_MODULE := audio.primary.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE := audio.primary.ucmhal
 LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
 LOCAL_SRC_FILES := \
@@ -51,6 +52,7 @@ LOCAL_CFLAGS += -DALSA_USE_CASE_DIR=\"/system/usr/share/alsa/ucm\"
 
 # Use STLport
 LOCAL_C_INCLUDES += external/stlport/stlport
+#LOCAL_STATIC_LIBRARIES += libstlport_static
 LOCAL_SHARED_LIBRARIES += libstlport
 
 include $(BUILD_SHARED_LIBRARY)
