@@ -260,12 +260,16 @@ do_over:
 		if (pcm_get_htimestamp(mPcm, (unsigned int *)&kernel_frames, &time_stamp) < 0)
 			break;
 		kernel_frames = pcm_get_buffer_size(mPcm) - kernel_frames;
+		ALOGV("kernel_frames %d mWriteThreshold %d", 
+		      kernel_frames, mWriteThreshold);
 		if (kernel_frames > mWriteThreshold) {
 			unsigned long time = (unsigned long)
 				(((int64_t)(kernel_frames - mWriteThreshold) * 1000000) /
 				 MM_FULL_POWER_SAMPLING_RATE);
 			if (time < MIN_WRITE_SLEEP_US)
 				time = MIN_WRITE_SLEEP_US;
+			ALOGV("%d > %d sleep %lu", 
+			      kernel_frames, mWriteThreshold, time);
 			usleep(time);
 		}
 	} while (kernel_frames > mWriteThreshold);
@@ -274,6 +278,7 @@ do_over:
 
 exit:
 	if (ret != 0) {
+		ALOGD("pcm_mmap_write(%p, %p, %d) returned %d", mPcm, buffer, out_frames * frame_size, ret);
 		unsigned int usecs = bytes * 1000000 / frame_size /
 			out_get_sample_rate(&audio_stream_out()->common);
 		if (usecs >= 1000000L) {
@@ -321,7 +326,7 @@ int OutStream::startStream()
 	 *	NOTE: PCM_NOIRQ mode is required to dynamically scale avail_min
 	 */
 	mWriteThreshold = PLAYBACK_PERIOD_COUNT * LONG_PERIOD_SIZE;
-	mConfig.start_threshold = SHORT_PERIOD_SIZE * 2;
+	//mConfig.start_threshold = SHORT_PERIOD_SIZE * 2;
 	// TODO avail_min is not available in my testenvironment
 	// mConfig.avail_min = LONG_PERIOD_SIZE,
 
