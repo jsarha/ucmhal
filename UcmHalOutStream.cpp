@@ -119,7 +119,7 @@ OutStream::OutStream(Dev &dev,
 	m_out.android_out.get_render_position = out_get_render_position;
 	m_out.me = this;
 
-	uh_assert_se(mUcm.findEntry(mDev.mMode, mDevices, mFlags, mEntry));
+	uh_assert_se(0 == mUcm.findEntry(mDev.mMode, mDevices, mFlags, mEntry));
 
 	mConfig.channels = 2;
 	mConfig.rate = DEFAULT_OUT_SAMPLING_RATE;
