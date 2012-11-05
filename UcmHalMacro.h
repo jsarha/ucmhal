@@ -26,7 +26,7 @@
 
 #define uh_assert_se(x) do {	  \
 		if (!(x)) \
-			ALOGE("Assertion '%s' in %s() failed at %s:%d", \
+			ALOGE("Assertion '%s' in %s failed at %s:%d", \
 			      #x, __func__, __FILE__, __LINE__); \
 	} while(0)
 

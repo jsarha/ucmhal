@@ -23,6 +23,8 @@ extern "C"
 int ucmhal_adev_open(const hw_module_t* module, const char* name,
                      hw_device_t** device)
 {
+	LOGFUNC("%s(%p, %s, %p)", __func__, module, name, device);
+
 	if (strcmp(name, AUDIO_HARDWARE_INTERFACE) != 0)
 		return -EINVAL;
 
@@ -180,6 +182,7 @@ int Dev::open_output_stream(audio_io_handle_t handle,
 		return -ENOMEM;
 	mOutStreams.insert(out);
 	*stream_out = out->audio_stream_out();
+	ALOGD("Created stream out %p", out);
 	return 0;
 }
 
@@ -187,6 +190,7 @@ void Dev::close_output_stream(struct audio_stream_out *stream) {
 	AutoMutex lock(mLock);
 	OutStream *out = ((ucmhal_out *) stream)->me;
 	uh_assert_se(1 == mOutStreams.erase(out));
+	ALOGD("Deleted stream out %p", out);
 	delete out;
 }
 

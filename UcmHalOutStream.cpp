@@ -143,16 +143,20 @@ OutStream::~OutStream() {
 }
 
 uint32_t OutStream::get_sample_rate() const {
+	LOGFUNC("%s(%p)", __func__, this);
 	return 44100;
 }
 
 int OutStream::set_sample_rate(uint32_t rate) {
+	LOGFUNC("%s(%p, %d)", __func__, this, rate);
 	return 0;
 }
 
 size_t OutStream::get_buffer_size() const {
-	//TODO
-	return 0;
+	LOGFUNC("%s(%p)", __func__, this);
+    /* audioflinger expects audio buffers to be a multiple of 16 frames */
+	return (mConfig.period_size & ~0xF) * audio_stream_frame_size(
+		const_cast<struct audio_stream *>(&m_out.android_out.common));
 }
 
 uint32_t OutStream::get_channels() const {
@@ -164,11 +168,12 @@ audio_format_t OutStream::get_format() const {
 }
 
 int OutStream::set_format(audio_format_t format) {
+	LOGFUNC("%s(%p, %d)", __func__, this, format);
 	return 0;
 }
 
 int OutStream::standby() {
-	LOGFUNC("%s(%p)", __FUNCTION__, this);
+	LOGFUNC("%s(%p)", __func__, this);
 	// TODO Do we really need the device lock here???
 	AutoMutex dLock(mDev.mLock);
 	AutoMutex sLock(mLock);
@@ -182,36 +187,42 @@ int OutStream::standby() {
 }
 
 int OutStream::dump(int fd) const {
-	//TODO
+	LOGFUNC("%s(%p)", __func__, this);
 	return 0;
 }
 
 int OutStream::set_parameters(const char *kvpairs) {
+	LOGFUNC("%s(%p, %s)", __func__, this, kvpairs);
 	//TODO
 	return 0;
 }
 
 char * OutStream::get_parameters(const char *keys) const {
+	LOGFUNC("%s(%p, %s)", __func__, this, keys);
 	//TODO
 	return 0;
 }
 
 int OutStream::add_audio_effect(effect_handle_t effect) const {
+	LOGFUNC("%s(%p, %p)", __func__, this, effect);
 	//TODO
 	return 0;
 }
 
 int OutStream::remove_audio_effect(effect_handle_t effect) const {
+	LOGFUNC("%s(%p, %p)", __func__, this, effect);
 	//TODO
 	return 0;
 }
 
 uint32_t OutStream::get_latency() const {
+	LOGFUNC("%s(%p)", __func__, this);
 	//TODO
 	return 0;
 }
 
 int OutStream::set_volume(float left, float right) {
+	LOGFUNC("%s(%p, %f, %f)", __func__, this, left, right);
 	//TODO
 	return 0;
 }
@@ -223,7 +234,7 @@ ssize_t OutStream::write(const void* buffer, size_t bytes) {
 	bool force_input_standby = false;
 	int kernel_frames;
 
-	LOGFUNC("%s(%p, %p, %d)", __FUNCTION__, this, buffer, bytes);
+	LOGFUNC("%s(%p, %p, %d)", __func__, this, buffer, bytes);
 
 do_over:
 	/* acquiring hw device mutex systematically is useful if a low priority thread is waiting
@@ -289,6 +300,7 @@ exit:
 }
 
 int OutStream::get_render_position(uint32_t *dsp_frames) const {
+	LOGFUNC("%s(%p, %p(%d))", __func__, this, dsp_frames, *dsp_frames);
 	//TODO
 	return 0;
 }
@@ -296,7 +308,7 @@ int OutStream::get_render_position(uint32_t *dsp_frames) const {
 /* must be called with hw device and output stream mutexes locked */
 int OutStream::startStream()
 {
-	LOGFUNC("%s(%p)", __FUNCTION__, this);
+	LOGFUNC("%s(%p)", __func__, this);
 
 	assert(mEntry != mUcm.noEntry());
 	mUcm.activateEntry(mEntry);
@@ -326,6 +338,7 @@ int OutStream::startStream()
 	return 0;
 }
 
+// FIXME this is broken. Need to do it in two phases
 int OutStream::modeUpdate(audio_mode_t mode) {
 	AutoMutex lock(mLock);
 	uclist_t::iterator newEntry;
