@@ -87,6 +87,7 @@ private:
 	uclist_t::iterator mEntry;
 
 	pcm_config mConfig;
+	int mFrameSize;
 	int mWriteMaxThreshold;
 	int mWriteMinThreshold;
 	pcm *mPcm;

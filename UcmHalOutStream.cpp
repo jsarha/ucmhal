@@ -130,6 +130,7 @@ OutStream::OutStream(Dev &dev,
 	mConfig.stop_threshold = 0;
 	mConfig.silence_threshold = 0;
 
+	mFrameSize = 0;
 	mWriteMaxThreshold = 0;
 	mWriteMinThreshold = 0;
 	mPcm = NULL;
@@ -231,76 +232,47 @@ int OutStream::set_volume(float left, float right) {
 
 ssize_t OutStream::write(const void* buffer, size_t bytes) {
 	int ret;
-	size_t frame_size = audio_stream_frame_size(&audio_stream_out()->common);
-	size_t out_frames = bytes / frame_size;
-	bool force_input_standby = false;
-	int kernel_frames;
-
 	LOGFUNC("%s(%p, %p, %d)", __func__, this, buffer, bytes);
 
-do_over:
-	/* acquiring hw device mutex systematically is useful if a low priority thread is waiting
-	 * on the output stream mutex - e.g. executing select_mode() while holding the hw device
-	 * mutex
-	 */
-	{
-		AutoMutex lock(mDev.mLock);
-		mLock.lock();
-		if (mStandby) {
-			ret = startStream();
-			if (ret != 0)
-				goto exit;
-			/* a change in output device may change the microphone selection */
-			// TODO
-		}
-	}
-
-	/* do not allow more than out->write_threshold frames in kernel pcm driver buffer */
+	AutoMutex lock(mLock);
 	do {
+		if (mStandby)
+			if (startStream())
+				return -EBUSY;
+
+		/* If we have more than mWriteMaxThreshold frames in DMA buffer we go
+		   to sleep until we have mWriteMinThreshold of frames left in buffer.
+		*/
 		struct timespec time_stamp;
-
-		if (pcm_get_htimestamp(mPcm, (unsigned int *)&kernel_frames, &time_stamp) < 0)
-			break;
-		kernel_frames = pcm_get_buffer_size(mPcm) - kernel_frames;
-		ALOGV("kernel_frames %d Threshold Min %d Max %d",
-		      kernel_frames, mWriteMinThreshold, mWriteMaxThreshold);
-		if (kernel_frames > mWriteMaxThreshold) {
-			unsigned long time = (unsigned long)
-				(((int64_t)(kernel_frames - mWriteMinThreshold) * 1000000) /
-				 mConfig.rate);
-			if (time < MIN_WRITE_SLEEP_US)
-				break;
-			ALOGV("%d > %d sleep %lu",
-			      kernel_frames, mWriteMaxThreshold, time);
-			usleep(time);
+		unsigned int frames_free;
+		if (pcm_get_htimestamp(mPcm, &frames_free, &time_stamp) >= 0) {
+			int frames_to_play = pcm_get_buffer_size(mPcm) - frames_free;
+			if (frames_to_play > mWriteMaxThreshold) {
+				useconds_t time = (((int64_t)(frames_to_play - mWriteMinThreshold)
+				                    * 1000000) / mConfig.rate);
+				if (time > MIN_WRITE_SLEEP_US)
+					usleep(time);
+			}
 		}
-	} while (kernel_frames > mWriteMaxThreshold);
-	ret = pcm_mmap_write(mPcm, buffer, out_frames * frame_size);
+		ret = pcm_mmap_write(mPcm, buffer, bytes);
 
-exit:
+		if (ret == -EPIPE) {
+			/* Recover from an underrun */
+			ALOGE("XRUN detected");
+			pcm_close(mPcm);
+			mPcm = NULL;
+			mStandby = 0;
+		}
+	} while(ret == -EPIPE);
+
 	if (ret != 0) {
 		ALOGD("pcm_mmap_write(%p, %p, %d) returned %d",
-		      mPcm, buffer, out_frames * frame_size, ret);
-		unsigned int usecs = bytes * 1000000 / frame_size /
-			out_get_sample_rate(&audio_stream_out()->common);
+		      mPcm, buffer, bytes, ret);
+		unsigned int usecs = bytes * 1000000 / mFrameSize / mConfig.rate;
 		if (usecs >= 1000000L) {
 			usecs = 999999L;
 		}
 		usleep(usecs);
-	}
-
-	mLock.unlock();
-
-	if (ret == -EPIPE) {
-		/* Recover from an underrun */
-		ALOGE("XRUN detected");
-		standby();
-		goto do_over;
-	}
-
-	if (force_input_standby) {
-		// TODO
-		ALOGE("force_input_standby not implemented");
 	}
 
 	return bytes;
@@ -312,7 +284,7 @@ int OutStream::get_render_position(uint32_t *dsp_frames) const {
 	return 0;
 }
 
-/* must be called with hw device and output stream mutexes locked */
+/* must be called with output stream mutexes locked */
 int OutStream::startStream()
 {
 	LOGFUNC("%s(%p)", __func__, this);
@@ -327,9 +299,10 @@ int OutStream::startStream()
 	/* default to low power:
 	 *	NOTE: PCM_NOIRQ mode is required to dynamically scale avail_min
 	 */
+	mFrameSize = audio_stream_frame_size(&m_out.android_out.common);
 	mWriteMaxThreshold = mConfig.period_size * (mConfig.period_count - 1);
 	mWriteMinThreshold = mConfig.period_size;
-	//mConfig.start_threshold = SHORT_PERIOD_SIZE * 2;
+	mConfig.start_threshold = mConfig.period_size;
 	// TODO avail_min is not available in my testenvironment
 	// mConfig.avail_min = LONG_PERIOD_SIZE,
 
@@ -339,7 +312,7 @@ int OutStream::startStream()
 		ALOGE("cannot open pcm_out driver: %s", pcm_get_error(mPcm));
 		pcm_close(mPcm);
 		mPcm = NULL;
-		return -ENOMEM;
+		return -EBUSY;
 	}
 
 	mStandby = 0;

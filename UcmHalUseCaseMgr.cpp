@@ -136,7 +136,7 @@ int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
 		mActiveVerb = SND_USE_CASE_VERB_INACTIVE;
 	}
 	else {
-		// TODO more complere support would maintain a union of devices from
+		// TODO more complete support would maintain a union of devices from
 		//		active usecases.
 		if (!i->mUcmModifier.empty()) {
 			ALOGV("Deactivating modifier '%s'", i->mUcmModifier.c_str());
