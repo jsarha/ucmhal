@@ -87,7 +87,8 @@ private:
 	uclist_t::iterator mEntry;
 
 	pcm_config mConfig;
-	int mWriteThreshold;
+	int mWriteMaxThreshold;
+	int mWriteMinThreshold;
 	pcm *mPcm;
 
 	int startStream();

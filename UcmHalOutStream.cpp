@@ -130,7 +130,8 @@ OutStream::OutStream(Dev &dev,
 	mConfig.stop_threshold = 0;
 	mConfig.silence_threshold = 0;
 
-	mWriteThreshold = 0;
+	mWriteMaxThreshold = 0;
+	mWriteMinThreshold = 0;
 	mPcm = NULL;
 
 	config->format = AUDIO_FORMAT_PCM_16_BIT;
@@ -261,19 +262,19 @@ do_over:
 		if (pcm_get_htimestamp(mPcm, (unsigned int *)&kernel_frames, &time_stamp) < 0)
 			break;
 		kernel_frames = pcm_get_buffer_size(mPcm) - kernel_frames;
-		ALOGV("kernel_frames %d mWriteThreshold %d",
-		      kernel_frames, mWriteThreshold);
-		if (kernel_frames > mWriteThreshold) {
+		ALOGV("kernel_frames %d Threshold Min %d Max %d",
+		      kernel_frames, mWriteMinThreshold, mWriteMaxThreshold);
+		if (kernel_frames > mWriteMaxThreshold) {
 			unsigned long time = (unsigned long)
-				(((int64_t)(kernel_frames - mWriteThreshold) * 1000000) /
-				 MM_FULL_POWER_SAMPLING_RATE);
+				(((int64_t)(kernel_frames - mWriteMinThreshold) * 1000000) /
+				 mConfig.rate);
 			if (time < MIN_WRITE_SLEEP_US)
-				time = MIN_WRITE_SLEEP_US;
+				break;
 			ALOGV("%d > %d sleep %lu",
-			      kernel_frames, mWriteThreshold, time);
+			      kernel_frames, mWriteMaxThreshold, time);
 			usleep(time);
 		}
-	} while (kernel_frames > mWriteThreshold);
+	} while (kernel_frames > mWriteMaxThreshold);
 	ret = pcm_mmap_write(mPcm, buffer, out_frames * frame_size);
 
 exit:
@@ -326,7 +327,8 @@ int OutStream::startStream()
 	/* default to low power:
 	 *	NOTE: PCM_NOIRQ mode is required to dynamically scale avail_min
 	 */
-	mWriteThreshold = mConfig.period_size * (mConfig.period_count - 1);
+	mWriteMaxThreshold = mConfig.period_size * (mConfig.period_count - 1);
+	mWriteMinThreshold = mConfig.period_size;
 	//mConfig.start_threshold = SHORT_PERIOD_SIZE * 2;
 	// TODO avail_min is not available in my testenvironment
 	// mConfig.avail_min = LONG_PERIOD_SIZE,
