@@ -154,8 +154,8 @@ int OutStream::set_sample_rate(uint32_t rate) {
 
 size_t OutStream::get_buffer_size() const {
 	LOGFUNC("%s(%p)", __func__, this);
-    /* audioflinger expects audio buffers to be a multiple of 16 frames */
-	return (mConfig.period_size & ~0xF) * audio_stream_frame_size(
+	/* audioflinger expects audio buffers to be a multiple of 16 frames */
+	return ((mConfig.period_size/2) & ~0xF) * audio_stream_frame_size(
 		const_cast<struct audio_stream *>(&m_out.android_out.common));
 }
 
@@ -217,8 +217,9 @@ int OutStream::remove_audio_effect(effect_handle_t effect) const {
 
 uint32_t OutStream::get_latency() const {
 	LOGFUNC("%s(%p)", __func__, this);
-	//TODO
-	return 0;
+	// TODO Should use pcm_get_latency(), but it is not implemented in tinyalsa.
+	//      Something based pcm_get_htimestamp would probably do.
+	return (mConfig.period_size * mConfig.period_count * 1000) / mConfig.rate;
 }
 
 int OutStream::set_volume(float left, float right) {
@@ -260,7 +261,7 @@ do_over:
 		if (pcm_get_htimestamp(mPcm, (unsigned int *)&kernel_frames, &time_stamp) < 0)
 			break;
 		kernel_frames = pcm_get_buffer_size(mPcm) - kernel_frames;
-		ALOGV("kernel_frames %d mWriteThreshold %d", 
+		ALOGV("kernel_frames %d mWriteThreshold %d",
 		      kernel_frames, mWriteThreshold);
 		if (kernel_frames > mWriteThreshold) {
 			unsigned long time = (unsigned long)
@@ -268,17 +269,17 @@ do_over:
 				 MM_FULL_POWER_SAMPLING_RATE);
 			if (time < MIN_WRITE_SLEEP_US)
 				time = MIN_WRITE_SLEEP_US;
-			ALOGV("%d > %d sleep %lu", 
+			ALOGV("%d > %d sleep %lu",
 			      kernel_frames, mWriteThreshold, time);
 			usleep(time);
 		}
 	} while (kernel_frames > mWriteThreshold);
-
 	ret = pcm_mmap_write(mPcm, buffer, out_frames * frame_size);
 
 exit:
 	if (ret != 0) {
-		ALOGD("pcm_mmap_write(%p, %p, %d) returned %d", mPcm, buffer, out_frames * frame_size, ret);
+		ALOGD("pcm_mmap_write(%p, %p, %d) returned %d",
+		      mPcm, buffer, out_frames * frame_size, ret);
 		unsigned int usecs = bytes * 1000000 / frame_size /
 			out_get_sample_rate(&audio_stream_out()->common);
 		if (usecs >= 1000000L) {
@@ -325,7 +326,7 @@ int OutStream::startStream()
 	/* default to low power:
 	 *	NOTE: PCM_NOIRQ mode is required to dynamically scale avail_min
 	 */
-	mWriteThreshold = PLAYBACK_PERIOD_COUNT * LONG_PERIOD_SIZE;
+	mWriteThreshold = mConfig.period_size * (mConfig.period_count - 1);
 	//mConfig.start_threshold = SHORT_PERIOD_SIZE * 2;
 	// TODO avail_min is not available in my testenvironment
 	// mConfig.avail_min = LONG_PERIOD_SIZE,
