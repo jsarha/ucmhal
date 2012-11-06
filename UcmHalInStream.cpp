@@ -190,21 +190,32 @@ uint32_t InStream::get_input_frames_lost() {
 	return 0;
 }
 
-int InStream::modeUpdate(audio_mode_t mode) {
+/* The device lock should be kept between deviceUpdatePrepare and
+   deviceUpdateFinish calls */
+int InStream::deviceUpdatePrepare() {
 // TODO
 /*
-  AutoMutex lock(mLock);
-  uclist_t::iterator newEntry;
-  uh_assert_se(mUcm.findEntry(mode, mDevices, mFlags, newEntry));
-  if (mEntry->active()) {
-  if (mEntry->equal(*newEntry))
-  return 0;
-  if (mUcm.changeStandby(mEntry, newEntry))
-  standby();
-  else
-  mUcm.deactivateEntry(mEntry);
-  mUcm.deactivateEntry(mEntry);
-  }
+	AutoMutex lock(mLock);
+	uclist_t::iterator newEntry;
+	uh_assert_se(mUcm.findEntry(mDev.mMode, mDevices, mFlags, newEntry));
+	if (mEntry->equal(*newEntry))
+		return 0;
+	if (mEntry->active()) {
+		if (!mStandby && mUcm.changeStandby(mEntry, newEntry))
+			standby();
+		else
+			mUcm.deactivateEntry(mEntry);
+	}
+	mEntry = newEntry;
+*/
+	return 0;
+}
+
+int InStream::deviceUpdateFinish() {
+// TODO
+/*
+	AutoMutex lock(mLock);
+	mUcm.activateEntry(mEntry);
 */
 	return 0;
 }

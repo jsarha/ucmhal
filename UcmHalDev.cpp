@@ -196,11 +196,13 @@ void Dev::close_output_stream(struct audio_stream_out *stream) {
 
 int Dev::set_parameters(const char *kvpairs) {
 	LOGFUNC("%s(%p, %s)", __func__, this, kvpairs);
-	mParameters.update(kvpairs);
+	mParameters.updateTrigger(kvpairs);
 	return 0;
 }
 
 char * Dev::get_parameters(const char *keys) const {
+	LOGFUNC("%s(%p, %s)", __func__, this, keys);
+	// TODO this is broken
 	return mParameters.toStr();
 }
 
@@ -221,12 +223,21 @@ int Dev::set_master_volume(float volume) {
 int Dev::set_mode(audio_mode_t mode) {
 	AutoMutex lock(mLock);
 	if (mMode != mode) {
+		ALOGD("Updating mode from %d to %d", mMode, mode);
+		mMode = mode;
 		for (OutStreamSet_t::iterator i = mOutStreams.begin();
 		     i != mOutStreams.begin(); i++)
-			(*i)->modeUpdate(mode);
+			(*i)->deviceUpdatePrepare();
 		for (InStreamSet_t::iterator i = mInStreams.begin();
 		     i != mInStreams.begin(); i++)
-			(*i)->modeUpdate(mode);
+			(*i)->deviceUpdatePrepare();
+
+		for (OutStreamSet_t::iterator i = mOutStreams.begin();
+		     i != mOutStreams.begin(); i++)
+			(*i)->deviceUpdateFinish();
+		for (InStreamSet_t::iterator i = mInStreams.begin();
+		     i != mInStreams.begin(); i++)
+			(*i)->deviceUpdateFinish();
 	}
 	return 0;
 }

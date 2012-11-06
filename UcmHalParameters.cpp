@@ -36,6 +36,7 @@ Parameters::Parameters(const char **supported) : mSupported(supported) {
 }
 
 Parameters::~Parameters() {
+	AutoMutex lock(mLock);
 	str_parms_destroy(mparms);
 }
 
@@ -44,6 +45,7 @@ int Parameters::update(const char *kvpairs, std::list<const char *> *changed) {
 	uh_assert(parms);
 	int parms_changed = 0;
 
+	AutoMutex lock(mLock);
 	for (int i=0; mSupported[i]; i++) {
 		int ret;
 		char nvalue[32];
@@ -70,17 +72,35 @@ string &Parameters::get(const char *key, string &value) const {
 	int ret;
 	char val[32];
 	value.clear();
+	AutoMutex lock(mLock);
 	ret = str_parms_get_str(mparms, key, val, sizeof(value));
 	if (ret >= 0)
 		value = val;
 	return value;
 }
 
+int Parameters::get(const char *key, int &value) const {
+	int val;
+	int ret;
+	AutoMutex lock(mLock);
+	ret = str_parms_get_int(mparms, key, &val);
+	if (ret >= 0)
+		value = val;
+	return value;
+}
+
 void Parameters::set(const char *key, const char *value) {
+	AutoMutex lock(mLock);
 	uh_assert_se(0 == str_parms_add_str(mparms, key, value));
 }
 
+void Parameters::set(const char *key, int value) {
+	AutoMutex lock(mLock);
+	uh_assert_se(0 == str_parms_add_int(mparms, key, value));
+}
+
 char *Parameters::toStr() const {
+	AutoMutex lock(mLock);
 	return str_parms_to_str(mparms);
 }
 

@@ -92,13 +92,19 @@ int out_get_render_position(const struct audio_stream_out *stream,
 		get_render_position(dsp_frames);
 }
 
+const char *OutStream::supportedParameters[] = {
+	AUDIO_PARAMETER_STREAM_ROUTING,
+	NULL
+};
+
 OutStream::OutStream(Dev &dev,
                      UseCaseMgr &ucm,
                      audio_io_handle_t handle,
                      audio_devices_t devices,
                      audio_output_flags_t flags,
                      struct audio_config *config) :
-	mDev(dev), mUcm(ucm), mStandby(true), mDevices(devices), mFlags(flags) {
+	mDev(dev), mUcm(ucm), mStandby(true), mDevices(devices), mFlags(flags),
+	mParameters(supportedParameters) {
 	memset(&m_out, 0, sizeof(m_out));
 
 	m_out.android_out.common.get_sample_rate = out_get_sample_rate;
@@ -118,6 +124,10 @@ OutStream::OutStream(Dev &dev,
 	m_out.android_out.write = out_write;
 	m_out.android_out.get_render_position = out_get_render_position;
 	m_out.me = this;
+
+	mParameters.set(AUDIO_PARAMETER_STREAM_ROUTING, devices);
+	mParameters.setHook(this, &OutStream::routeUpdateHook,
+	                    AUDIO_PARAMETER_STREAM_ROUTING);
 
 	uh_assert_se(0 == mUcm.findEntry(mDev.mMode, mDevices, mFlags, mEntry));
 
@@ -177,7 +187,7 @@ int OutStream::set_format(audio_format_t format) {
 int OutStream::standby() {
 	LOGFUNC("%s(%p)", __func__, this);
 	// TODO Do we really need the device lock here???
-	AutoMutex dLock(mDev.mLock);
+	//AutoMutex dLock(mDev.mLock);
 	AutoMutex sLock(mLock);
 	if (!mStandby) {
 		pcm_close(mPcm);
@@ -195,14 +205,14 @@ int OutStream::dump(int fd) const {
 
 int OutStream::set_parameters(const char *kvpairs) {
 	LOGFUNC("%s(%p, %s)", __func__, this, kvpairs);
-	//TODO
+	mParameters.updateTrigger(kvpairs);
 	return 0;
 }
 
 char * OutStream::get_parameters(const char *keys) const {
 	LOGFUNC("%s(%p, %s)", __func__, this, keys);
-	//TODO
-	return 0;
+	// TODO this is broken
+	return mParameters.toStr();
 }
 
 int OutStream::add_audio_effect(effect_handle_t effect) const {
@@ -218,7 +228,7 @@ int OutStream::remove_audio_effect(effect_handle_t effect) const {
 }
 
 uint32_t OutStream::get_latency() const {
-	LOGFUNC("%s(%p)", __func__, this);
+	//LOGFUNC("%s(%p)", __func__, this);
 	// TODO Should use pcm_get_latency(), but it is not implemented in tinyalsa.
 	//      Something based pcm_get_htimestamp would probably do.
 	return (mConfig.period_size * mConfig.period_count * 1000) / mConfig.rate;
@@ -232,7 +242,7 @@ int OutStream::set_volume(float left, float right) {
 
 ssize_t OutStream::write(const void* buffer, size_t bytes) {
 	int ret;
-	LOGFUNC("%s(%p, %p, %d)", __func__, this, buffer, bytes);
+	//LOGFUNC("%s(%p, %p, %d)", __func__, this, buffer, bytes);
 
 	AutoMutex lock(mLock);
 	do {
@@ -319,11 +329,12 @@ int OutStream::startStream()
 	return 0;
 }
 
-// FIXME this is broken. Need to do it in two phases
-int OutStream::modeUpdate(audio_mode_t mode) {
+/* The device lock should be kept between deviceUpdatePrepare and
+   deviceUpdateFinish calls */
+int OutStream::deviceUpdatePrepare() {
 	AutoMutex lock(mLock);
 	uclist_t::iterator newEntry;
-	uh_assert_se(mUcm.findEntry(mode, mDevices, mFlags, newEntry));
+	uh_assert_se(0 == mUcm.findEntry(mDev.mMode, mDevices, mFlags, newEntry));
 	if (mEntry->equal(*newEntry))
 		return 0;
 	if (mEntry->active()) {
@@ -331,10 +342,30 @@ int OutStream::modeUpdate(audio_mode_t mode) {
 			standby();
 		else
 			mUcm.deactivateEntry(mEntry);
-		mUcm.activateEntry(newEntry);
 	}
 	mEntry = newEntry;
 	return 0;
+}
+
+int OutStream::deviceUpdateFinish() {
+	AutoMutex lock(mLock);
+	mUcm.activateEntry(mEntry);
+	return 0;
+}
+
+void OutStream::routeUpdateHook() {
+	AutoMutex dLock(mDev.mLock);
+	AutoMutex sLock(mLock);
+	int newDevices = -1;
+	mParameters.get(AUDIO_PARAMETER_STREAM_ROUTING, newDevices);
+	if (mDevices != newDevices && newDevices != -1) {
+		ALOGD("Devices changed from 0x%08x to 0x%08x", mDevices, newDevices);
+		mDevices = (audio_devices_t) newDevices;
+		deviceUpdatePrepare();
+		deviceUpdateFinish();
+	}
+	else
+		ALOGE("Bogus device update 0x%08x", newDevices);
 }
 
 }; // namespace UcmHal

@@ -38,6 +38,7 @@
 #include <utility>
 
 #include "UcmHalUseCaseMgr.h"
+#include "UcmHalParameters.h"
 
 namespace UcmHal {
 
@@ -74,7 +75,9 @@ public:
 	int get_render_position(uint32_t *dsp_frames) const;
 
 	audio_stream_out *audio_stream_out() { return &m_out.android_out; }
-	int modeUpdate(audio_mode_t mode);
+	int deviceUpdatePrepare();
+	int deviceUpdateFinish();
+	void routeUpdateHook();
 private:
 	ucmhal_out m_out;
 	Dev &mDev;
@@ -83,6 +86,9 @@ private:
 	bool mStandby;
 	audio_devices_t mDevices;
 	audio_output_flags_t mFlags;
+
+	static const char *supportedParameters[];
+	HookedParameters<OutStream> mParameters;
 
 	uclist_t::iterator mEntry;
 

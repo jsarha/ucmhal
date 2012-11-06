@@ -40,11 +40,14 @@ public:
 
 	int update(const char *kvpairs, std::list<const char *> *changed = NULL);
 	string &get(const char *key, string &value) const;
+	int get(const char *key, int &value) const;
 	void set(const char *key, const char *value);
+	void set(const char *key, int value);
 	char *toStr() const;
 private:
 	const char **mSupported;
 	str_parms *mparms;
+	mutable Mutex mLock;
 };
 
 template<class T>
@@ -81,7 +84,7 @@ public:
 		for (std::list<const char *>::iterator i = changed.begin();
 		     i != changed.end(); i++) {
 			if (mHooks.count(*i) == 1)
-				mHooks.find(*i)->fire();
+				mHooks[*i].fire();
 		}
 		return ret;
 	}
