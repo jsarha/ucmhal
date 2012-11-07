@@ -32,7 +32,7 @@ extern "C" {
 namespace UcmHal {
 
 Parameters::Parameters(const char **supported) : mSupported(supported) {
-	uh_assert_se(mparms = str_parms_create_str(";"));
+	uh_assert_se(mparms = str_parms_create());
 }
 
 Parameters::~Parameters() {
