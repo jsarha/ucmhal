@@ -68,6 +68,14 @@ int main(int argc, char *argv[]) {
 		adev->close_output_stream(adev, stream_out_hs);
 
 		play_sine(stream_out_hf, 44100);
+		// Route to headset
+		stream_out_hf->common.set_parameters(
+			&stream_out_hf->common, AUDIO_PARAMETER_STREAM_ROUTING "=4;");
+		play_sine(stream_out_hf, 44100);
+		// Route back to speaker
+		stream_out_hf->common.set_parameters(
+			&stream_out_hf->common, AUDIO_PARAMETER_STREAM_ROUTING "=2;");
+		play_sine(stream_out_hf, 44100);
 		fgets(buf, sizeof(buf), stdin);
 		adev->set_parameters(adev, AUDIO_PARAMETER_KEY_SCREEN_STATE "=on;");
 		fgets(buf, sizeof(buf), stdin);
@@ -104,7 +112,8 @@ void sine_pcm(int16_t *buf, size_t len, int *phase) {
 
 void play_sine(struct audio_stream_out *out, size_t frames) {
 	int i;
-	int16_t buf[2*1920];
+	size_t bufsize = out->common.get_buffer_size(&out->common);
+	int16_t buf[bufsize/sizeof(int16_t)];
 	int phase = 0;
 	init_sine_pcm();
 
