@@ -129,7 +129,7 @@ OutStream::OutStream(Dev &dev,
 	mParameters.setHook(this, &OutStream::routeUpdateHook,
 	                    AUDIO_PARAMETER_STREAM_ROUTING);
 
-	uh_assert_se(0 == mUcm.findEntry(mDev.mMode, mDevices, mFlags, mEntry));
+	uh_assert_se(0 == mUcm.findEntry(mEntry, mDev.mMode, mDevices, mFlags));
 
 	mConfig.channels = 2;
 	mConfig.rate = DEFAULT_OUT_SAMPLING_RATE;
@@ -322,6 +322,7 @@ int OutStream::startStream()
 		ALOGE("cannot open pcm_out driver: %s", pcm_get_error(mPcm));
 		pcm_close(mPcm);
 		mPcm = NULL;
+		mUcm.deactivateEntry(mEntry);
 		return -EBUSY;
 	}
 
@@ -334,7 +335,7 @@ int OutStream::startStream()
 int OutStream::deviceUpdatePrepare() {
 	AutoMutex lock(mLock);
 	uclist_t::iterator newEntry;
-	uh_assert_se(0 == mUcm.findEntry(mDev.mMode, mDevices, mFlags, newEntry));
+	uh_assert_se(0 == mUcm.findEntry(newEntry, mDev.mMode, mDevices, mFlags));
 	if (mEntry->equal(*newEntry))
 		return 0;
 	if (mEntry->active()) {

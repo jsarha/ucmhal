@@ -30,10 +30,14 @@
 #include <system/audio.h>
 #include <hardware/audio.h>
 
+#include <tinyalsa/asoundlib.h>
+
 #include "UcmHalTypes.h"
 
 #include <map>
 #include <utility>
+
+#include "UcmHalUseCaseMgr.h"
 
 namespace UcmHal {
 
@@ -83,9 +87,10 @@ private:
 	Mutex mLock;
 	bool mStandby;
 	audio_devices_t mDevices;
-	
+
 	uclist_t::iterator mEntry;
-	
+
+	pcm_config mConfig;
 	pcm *mPcm;
 
 	int startInputStream();

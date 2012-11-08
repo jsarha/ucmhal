@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "UcmHalDev.h"
 #include "UcmHalInStream.h"
 #include "UcmHalMacro.h"
 #include "UcmHalUseCaseMgr.h"
@@ -110,10 +111,8 @@ InStream::InStream(Dev &dev,
 	m_in.android_in.get_input_frames_lost = in_get_input_frames_lost;
 	m_in.me = this;
 
-	// FIXME this is a hack... I'll fix it when I have a proper configuration 
-	// with separate playback and capture devices ready.
-	uh_assert_se(mUcm.findEntry(mDev.mMode, AUDIO_DEVICE_OUT_SPEAKER, 0, mEntry));
-	
+	uh_assert_se(0 == mUcm.findEntry(mEntry, mDev.mMode, mDevices));
+
 	mConfig.channels = popcount(config->channel_mask);
 	mConfig.rate = MM_FULL_POWER_SAMPLING_RATE;
 	mConfig.period_size = SHORT_PERIOD_SIZE;
@@ -128,134 +127,135 @@ InStream::~InStream() {
 }
 
 uint32_t InStream::get_sample_rate() const {
-    LOGFUNC("%s(%p)", __FUNCTION__, this);
+    LOGFUNC("%s(%p)", __func__, this);
 	return mConfig.rate;
 }
 
 int InStream::set_sample_rate(uint32_t rate) {
-	LOGFUNC("%s(%p, %d)", __FUNCTION__, this, rate);
+	LOGFUNC("%s(%p, %d)", __func__, this, rate);
 	return 0;
 }
 
 size_t InStream::get_buffer_size() const {
-	//TODO
-	return 0;
+	LOGFUNC("%s(%p)", __func__, this);
+	return mConfig.period_size;
 }
 
 uint32_t InStream::get_channels() const {
-    LOGFUNC("%s(%p)", __FUNCTION__, this);
-	return mConfig.channel_mask;
+    LOGFUNC("%s(%p)", __func__, this);
+    if (mConfig.channels) {
+        return AUDIO_CHANNEL_IN_MONO;
+    } else {
+        return AUDIO_CHANNEL_IN_STEREO;
+    }
 }
 
 audio_format_t InStream::get_format() const {
-    LOGFUNC("%s(%p)", __FUNCTION__, this);
-	return mConfig.format;
+    LOGFUNC("%s(%p)", __func__, this);
+	return AUDIO_FORMAT_PCM_16_BIT;
 }
 
 int InStream::set_format(audio_format_t format) {
-	LOGFUNC("%s(%p, %d)", __FUNCTION__, this, format);
+	LOGFUNC("%s(%p, %d)", __func__, this, format);
 	return 0;
 }
 
 int InStream::standby() {
-	//TODO
+	LOGFUNC("%s(%p)", __func__, this);
+	// TODO Do we really need the device lock here???
+	//AutoMutex dLock(mDev.mLock);
+	AutoMutex sLock(mLock);
+	if (!mStandby) {
+		pcm_close(mPcm);
+		mPcm = NULL;
+		mUcm.deactivateEntry(mEntry);
+		mStandby = 1;
+	}
 	return 0;
 }
 
 int InStream::dump(int fd) const {
-	LOGFUNC("%s(%p, %d)", __FUNCTION__, this, fd);
+	LOGFUNC("%s(%p, %d)", __func__, this, fd);
 	return 0;
 }
 
 int InStream::set_parameters(const char *kvpairs) {
+	LOGFUNC("%s(%p, %s)", __func__, this, kvpairs);
 	//TODO
 	return 0;
 }
 
 char * InStream::get_parameters(const char *keys) const {
+	LOGFUNC("%s(%p, %s)", __func__, this, keys);
 	//TODO
 	return 0;
 }
 
 int InStream::add_audio_effect(effect_handle_t effect) const {
-	LOGFUNC("%s(%p, %d)", __FUNCTION__, this, effect);
+	LOGFUNC("%s(%p, %d)", __func__, this, effect);
 	return 0;
 }
 
 int InStream::remove_audio_effect(effect_handle_t effect) const {
-	LOGFUNC("%s(%p, %d)", __FUNCTION__, this, effect);
+	LOGFUNC("%s(%p, %d)", __func__, this, effect);
 	return 0;
 }
 
 int InStream::set_gain(float gain) {
+	LOGFUNC("%s(%p)", __func__, this);
 	//TODO
 	return 0;
 }
 
 ssize_t InStream::read(void* buffer, size_t bytes) {
-    int ret = 0;
-    size_t frames_rq = bytes / 
-	    audio_stream_frame_size(&audio_stream_in()->common);
+	int ret = 0;
 
-    LOGFUNC("%s(%p, %p, %d)", __FUNCTION__, stream, buffer, bytes);
+	LOGFUNC("%s(%p, %p, %d)", __func__, this, buffer, bytes);
 
-    /* acquiring hw device mutex systematically is useful if a low priority thread is waiting
-     * on the input stream mutex - e.g. executing select_mode() while holding the hw device
-     * mutex
-     */
-    mDev.mLock.lock();
-    mLock.lock();
-    if (mStandby) {
-	    ret = startInputStream();
-	    if (ret == 0)
-		    mStandby = 0;
-    }
-    mDev.mLock.unlock();
+	AutoMutex lock(mLock);
+	if (mStandby) {
+		if (startInputStream())
+			return -EBUSY;
+	}
 
-    if (ret < 0)
-        goto exit;
+	ret = pcm_read(mPcm, buffer, bytes);
+	ALOGV("pcm_read(%p, %p, %d) returned %d", mPcm, buffer, bytes, ret);
 
-    ret = pcm_read(in->pcm, buffer, bytes);
-
-    if (ret > 0)
-        ret = 0;
-
-    if (ret == 0 && adev->mic_mute)
-        memset(buffer, 0, bytes);
-
-exit:
-    if (ret < 0)
-        usleep(bytes * 1000000 / audio_stream_frame_size(&stream->common) /
-               in_get_sample_rate(&stream->common));
-
-    pthread_mutex_unlock(&in->lock);
+	if (ret >= 0 && mDev.mMicMute)
+		memset(buffer, 0, bytes);
+	if (ret < 0) {
+		ALOGE("pcm_read(%p, %p, %d) returned %d", mPcm, buffer, bytes, ret);
+		usleep(bytes * 1000000 /
+		       audio_stream_frame_size(&audio_stream_in()->common) /
+		       mConfig.rate);
+	}
     return bytes;
 }
 
 
 int InStream::startInputStream() {
-    int ret = 0;
+    LOGFUNC("%s(%p)", __func__, this);
 
-    LOGFUNC("%s(%p)", __FUNCTION__, this);
-    // FIXME This is a hack
-    if (mUcm.activeVerb().empty()) {
-	    mUcm.activateEntry(mEntry);
-    }
+    mUcm.activateEntry(mEntry);
     int card = mUcm.getCaptureCard(mEntry);
     int port = mUcm.getCapturePort(mEntry);
 
-    LOGE("setting capture card=%d port=%d", card, port);
+    ALOGE("setting capture card=%d port=%d", card, port);
 
-    mPcm = pcm_open(card, port, PCM_IN, &in->config);
-    if (!pcm_is_ready(in->pcm)) {
-        LOGE("cannot open pcm_in driver: %s", pcm_get_error(in->pcm));
-        pcm_close(in->pcm);
+    mPcm = pcm_open(card, port, PCM_IN, &mConfig);
+    if (!pcm_is_ready(mPcm)) {
+        ALOGE("cannot open pcm_in driver: %s", pcm_get_error(mPcm));
+        pcm_close(mPcm);
+        mPcm = NULL;
+		mUcm.deactivateEntry(mEntry);
         return -ENOMEM;
     }
+    mStandby = false;
     return 0;
 }
 
 uint32_t InStream::get_input_frames_lost() {
+    LOGFUNC("%s(%p)", __func__, this);
 	//TODO
 	return 0;
 }
@@ -263,11 +263,9 @@ uint32_t InStream::get_input_frames_lost() {
 /* The device lock should be kept between deviceUpdatePrepare and
    deviceUpdateFinish calls */
 int InStream::deviceUpdatePrepare() {
-// TODO
-/*
 	AutoMutex lock(mLock);
 	uclist_t::iterator newEntry;
-	uh_assert_se(mUcm.findEntry(mDev.mMode, mDevices, mFlags, newEntry));
+	uh_assert_se(mUcm.findEntry(newEntry, mDev.mMode, mDevices));
 	if (mEntry->equal(*newEntry))
 		return 0;
 	if (mEntry->active()) {
@@ -277,16 +275,13 @@ int InStream::deviceUpdatePrepare() {
 			mUcm.deactivateEntry(mEntry);
 	}
 	mEntry = newEntry;
-*/
 	return 0;
 }
 
 int InStream::deviceUpdateFinish() {
-// TODO
-/*
 	AutoMutex lock(mLock);
-	mUcm.activateEntry(mEntry);
-*/
+	if (!mStandby)
+		mUcm.activateEntry(mEntry);
 	return 0;
 }
 
@@ -304,7 +299,7 @@ int InStream::check_parameters(audio_config_t *config)
 		return -EINVAL;
 	}
 	*/
-	if (config->channel_mask != AUDIO_CHANNEL_IN_MONO && 
+	if (config->channel_mask != AUDIO_CHANNEL_IN_MONO &&
 	    config->channel_mask != AUDIO_CHANNEL_IN_STEREO)
 		return -EINVAL;
 

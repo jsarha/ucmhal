@@ -81,6 +81,7 @@ private:
 	UseCaseMgr mUcm;
 	bool mInitStatus;
 	audio_mode_t mMode;
+	bool mMicMute;
 
 	static const char *supportedParameters[];
 	HookedParameters<Dev> mParameters;

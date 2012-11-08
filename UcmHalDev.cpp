@@ -134,6 +134,7 @@ Dev::Dev(const hw_module_t* module) :
 	mUcm(mMM),
 	mInitStatus(false),
 	mMode(AUDIO_MODE_NORMAL),
+	mMicMute(false),
 	mParameters(supportedParameters) {
 	memset(&m_dev, 0, sizeof(m_dev));
 
@@ -190,7 +191,7 @@ void Dev::close_output_stream(struct audio_stream_out *stream) {
 	AutoMutex lock(mLock);
 	OutStream *out = ((ucmhal_out *) stream)->me;
 	uh_assert_se(1 == mOutStreams.erase(out));
-	ALOGD("Deleted stream out %p", out);
+	ALOGD("Deleting stream out %p", out);
 	delete out;
 }
 
@@ -213,12 +214,12 @@ int Dev::init_check() const {
 }
 
 int Dev::set_voice_volume(float volume) {
-    LOGFUNC("%s(%p, %f)", __FUNCTION__, this, volume);
+    LOGFUNC("%s(%p, %f)", __func__, this, volume);
 	return -ENOSYS;
 }
 
 int Dev::set_master_volume(float volume) {
-    LOGFUNC("%s(%p, %f)", __FUNCTION__, this, volume);
+    LOGFUNC("%s(%p, %f)", __func__, this, volume);
 	return -ENOSYS;
 }
 
@@ -245,13 +246,16 @@ int Dev::set_mode(audio_mode_t mode) {
 }
 
 int Dev::set_mic_mute(bool state) {
-	// TODO
-	return -ENOSYS;
+    LOGFUNC("%s(%p, %d)", __func__, this, state);
+    mMicMute = state;
+    // TODO Should set input stream volumes to zero?
+	return 0;
 }
 
 int Dev::get_mic_mute(bool *state) const {
-	// TODO
-	return -ENOSYS;
+    LOGFUNC("%s(%p, %d)", __func__, this, mMicMute);
+    *state = mMicMute;
+	return 0;
 }
 
 size_t Dev::get_input_buffer_size(const audio_config *config) const {
@@ -274,6 +278,7 @@ int Dev::open_input_stream(audio_io_handle_t handle,
 		return -ENOMEM;
 	mInStreams.insert(in);
 	*stream_in = in->audio_stream_in();
+	ALOGD("Created stream in %p", in);
 	return 0;
 }
 
@@ -281,6 +286,7 @@ void Dev::close_input_stream(struct audio_stream_in *stream) {
 	AutoMutex lock(mLock);
 	InStream *in = ((ucmhal_in *) stream)->me;
 	uh_assert_se(1 == mInStreams.erase(in));
+	ALOGD("Deleting stream in %p", in);
 	delete in;
 }
 
