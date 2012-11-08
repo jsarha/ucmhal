@@ -349,7 +349,8 @@ int OutStream::deviceUpdatePrepare() {
 
 int OutStream::deviceUpdateFinish() {
 	AutoMutex lock(mLock);
-	mUcm.activateEntry(mEntry);
+	if (!mStandby)
+		mUcm.activateEntry(mEntry);
 	return 0;
 }
 
