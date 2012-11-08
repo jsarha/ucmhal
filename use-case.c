@@ -992,8 +992,8 @@ static int parse_modifier(snd_use_case_mgr_t *uc_mgr,
 			continue;
 		}
 
-		if (strncmp(tbuf, "CapturePCM", 3) == 0) {
-			modifier->capture_pcm = atoi(tbuf + 3);
+		if (strncmp(tbuf, "CapturePCM", 10) == 0) {
+			modifier->capture_pcm = atoi(tbuf + 10);
 			if (modifier->capture_pcm < 0) {
 				uc_error("error: %s:%d failed to get Capture PCM ID",
 						file, line);
@@ -1002,8 +1002,8 @@ static int parse_modifier(snd_use_case_mgr_t *uc_mgr,
 			continue;
 		}
 
-		if (strncmp(tbuf, "PlaybackPCM", 3) == 0) {
-			modifier->playback_pcm = atoi(tbuf + 3);
+		if (strncmp(tbuf, "PlaybackPCM", 11) == 0) {
+			modifier->playback_pcm = atoi(tbuf + 11);
 			if (modifier->playback_pcm < 0) {
 				uc_error("error: %s:%d failed to get Playback PCM ID",
 						file, line);
@@ -1418,9 +1418,9 @@ static int parse_verb(snd_use_case_mgr_t *uc_mgr,
 			continue;
 		}
 
-		if (strncmp(tbuf, "CapturePCM", 3) == 0) {
-			uc_dbg("Parse CapTurePCM");
-			verb->capture_pcm = atoi(tbuf + 3);
+		if (strncmp(tbuf, "CapturePCM", 10) == 0) {
+			uc_dbg("Parse CapturePCM:");
+			verb->capture_pcm = atoi(tbuf + 10);
 			if (verb->capture_pcm < 0) {
 				uc_error("error: %s:%d failed to get Capture PCM ID",
 						file, line);
@@ -1429,9 +1429,9 @@ static int parse_verb(snd_use_case_mgr_t *uc_mgr,
 			continue;
 		}
 
-		if (strncmp(tbuf, "PlaybackPCM", 3) == 0) {
+		if (strncmp(tbuf, "PlaybackPCM", 11) == 0) {
 			uc_dbg("Parse PlaybackPCM");
-			verb->playback_pcm = atoi(tbuf + 3);
+			verb->playback_pcm = atoi(tbuf + 11);
 			if (verb->playback_pcm < 0) {
 				uc_error("error: %s: %d failed to get Playback PCM ID",
 						file, line);
