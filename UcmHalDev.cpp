@@ -213,10 +213,12 @@ int Dev::init_check() const {
 }
 
 int Dev::set_voice_volume(float volume) {
+    LOGFUNC("%s(%p, %f)", __FUNCTION__, this, volume);
 	return -ENOSYS;
 }
 
 int Dev::set_master_volume(float volume) {
+    LOGFUNC("%s(%p, %f)", __FUNCTION__, this, volume);
 	return -ENOSYS;
 }
 
@@ -243,10 +245,12 @@ int Dev::set_mode(audio_mode_t mode) {
 }
 
 int Dev::set_mic_mute(bool state) {
+	// TODO
 	return -ENOSYS;
 }
 
 int Dev::get_mic_mute(bool *state) const {
+	// TODO
 	return -ENOSYS;
 }
 

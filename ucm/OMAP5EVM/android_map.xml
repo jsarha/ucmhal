@@ -110,5 +110,42 @@
 	<modifier/>
       </output>
     </row>
+<!-- Input mapping start here -->
+    <row>
+      <input>
+	<audio_mode>AUDIO_MODE_NORMAL</audio_mode>
+	<devices><flag>AUDIO_DEVICE_IN_COMMUNICATION</flag></devices>
+	<devices_mask><flag>AUDIO_DEVICE_IN_COMMUNICATION</flag></devices_mask>
+      </input>
+      <output>
+	<verb>HiFi</verb>
+	<device>MainMic</device>
+	<modifier/>
+      </output>
+    </row>
+    <row>
+      <input>
+	<audio_mode>AUDIO_MODE_NORMAL</audio_mode>
+	<devices><flag>AUDIO_DEVICE_IN_BUILTIN_MIC</flag></devices>
+	<devices_mask><flag>AUDIO_DEVICE_IN_BUILTIN_MIC</flag></devices_mask>
+      </input>
+      <output>
+	<verb>HiFi</verb>
+	<device>MainMic</device>
+	<modifier/>
+      </output>
+    </row>
+    <row>
+      <input>
+	<audio_mode>AUDIO_MODE_NORMAL</audio_mode>
+	<devices><flag>AUDIO_DEVICE_IN_WIRED_HEADSET</flag></devices>
+	<devices_mask><flag>AUDIO_DEVICE_IN_WIRED_HEADSET</flag></devices_mask>
+      </input>
+      <output>
+	<verb>HiFi</verb>
+	<device>HeadsetMic</device>
+	<modifier/>
+      </output>
+    </row>
   </use_case_table>
 </android_use_case_map>

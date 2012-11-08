@@ -110,17 +110,30 @@ InStream::InStream(Dev &dev,
 	m_in.android_in.get_input_frames_lost = in_get_input_frames_lost;
 	m_in.me = this;
 
-	mConfig = *config;
+	// FIXME this is a hack... I'll fix it when I have a proper configuration 
+	// with separate playback and capture devices ready.
+	uh_assert_se(mUcm.findEntry(mDev.mMode, AUDIO_DEVICE_OUT_SPEAKER, 0, mEntry));
+	
+	mConfig.channels = popcount(config->channel_mask);
+	mConfig.rate = MM_FULL_POWER_SAMPLING_RATE;
+	mConfig.period_size = SHORT_PERIOD_SIZE;
+	mConfig.period_count = CAPTURE_PERIOD_COUNT;
+	mConfig.format = PCM_FORMAT_S16_LE;
+	mConfig.start_threshold = 0;
+	mConfig.stop_threshold = 0;
+	mConfig.silence_threshold = 0;
 }
 
 InStream::~InStream() {
 }
 
 uint32_t InStream::get_sample_rate() const {
-	return 44100;
+    LOGFUNC("%s(%p)", __FUNCTION__, this);
+	return mConfig.rate;
 }
 
 int InStream::set_sample_rate(uint32_t rate) {
+	LOGFUNC("%s(%p, %d)", __FUNCTION__, this, rate);
 	return 0;
 }
 
@@ -130,18 +143,17 @@ size_t InStream::get_buffer_size() const {
 }
 
 uint32_t InStream::get_channels() const {
-	if (popcount(mConfig.channel_mask) == 1) {
-		return AUDIO_CHANNEL_IN_MONO;
-	} else {
-		return AUDIO_CHANNEL_IN_STEREO;
-	}
+    LOGFUNC("%s(%p)", __FUNCTION__, this);
+	return mConfig.channel_mask;
 }
 
 audio_format_t InStream::get_format() const {
-	return AUDIO_FORMAT_PCM_16_BIT;
+    LOGFUNC("%s(%p)", __FUNCTION__, this);
+	return mConfig.format;
 }
 
 int InStream::set_format(audio_format_t format) {
+	LOGFUNC("%s(%p, %d)", __FUNCTION__, this, format);
 	return 0;
 }
 
@@ -151,7 +163,7 @@ int InStream::standby() {
 }
 
 int InStream::dump(int fd) const {
-	//TODO
+	LOGFUNC("%s(%p, %d)", __FUNCTION__, this, fd);
 	return 0;
 }
 
@@ -166,12 +178,12 @@ char * InStream::get_parameters(const char *keys) const {
 }
 
 int InStream::add_audio_effect(effect_handle_t effect) const {
-	//TODO
+	LOGFUNC("%s(%p, %d)", __FUNCTION__, this, effect);
 	return 0;
 }
 
 int InStream::remove_audio_effect(effect_handle_t effect) const {
-	//TODO
+	LOGFUNC("%s(%p, %d)", __FUNCTION__, this, effect);
 	return 0;
 }
 
@@ -181,8 +193,66 @@ int InStream::set_gain(float gain) {
 }
 
 ssize_t InStream::read(void* buffer, size_t bytes) {
-	//TODO
-	return 0;
+    int ret = 0;
+    size_t frames_rq = bytes / 
+	    audio_stream_frame_size(&audio_stream_in()->common);
+
+    LOGFUNC("%s(%p, %p, %d)", __FUNCTION__, stream, buffer, bytes);
+
+    /* acquiring hw device mutex systematically is useful if a low priority thread is waiting
+     * on the input stream mutex - e.g. executing select_mode() while holding the hw device
+     * mutex
+     */
+    mDev.mLock.lock();
+    mLock.lock();
+    if (mStandby) {
+	    ret = startInputStream();
+	    if (ret == 0)
+		    mStandby = 0;
+    }
+    mDev.mLock.unlock();
+
+    if (ret < 0)
+        goto exit;
+
+    ret = pcm_read(in->pcm, buffer, bytes);
+
+    if (ret > 0)
+        ret = 0;
+
+    if (ret == 0 && adev->mic_mute)
+        memset(buffer, 0, bytes);
+
+exit:
+    if (ret < 0)
+        usleep(bytes * 1000000 / audio_stream_frame_size(&stream->common) /
+               in_get_sample_rate(&stream->common));
+
+    pthread_mutex_unlock(&in->lock);
+    return bytes;
+}
+
+
+int InStream::startInputStream() {
+    int ret = 0;
+
+    LOGFUNC("%s(%p)", __FUNCTION__, this);
+    // FIXME This is a hack
+    if (mUcm.activeVerb().empty()) {
+	    mUcm.activateEntry(mEntry);
+    }
+    int card = mUcm.getCaptureCard(mEntry);
+    int port = mUcm.getCapturePort(mEntry);
+
+    LOGE("setting capture card=%d port=%d", card, port);
+
+    mPcm = pcm_open(card, port, PCM_IN, &in->config);
+    if (!pcm_is_ready(in->pcm)) {
+        LOGE("cannot open pcm_in driver: %s", pcm_get_error(in->pcm));
+        pcm_close(in->pcm);
+        return -ENOMEM;
+    }
+    return 0;
 }
 
 uint32_t InStream::get_input_frames_lost() {
@@ -228,10 +298,15 @@ int InStream::check_parameters(audio_config_t *config)
 		return -EINVAL;
 	}
 
+	/* This does not look right to me
 	int channel_count = popcount(config->channel_mask);
 	if ((channel_count < 1) || (channel_count > 2)) {
 		return -EINVAL;
 	}
+	*/
+	if (config->channel_mask != AUDIO_CHANNEL_IN_MONO && 
+	    config->channel_mask != AUDIO_CHANNEL_IN_STEREO)
+		return -EINVAL;
 
 	switch(config->sample_rate) {
 	case 8000:

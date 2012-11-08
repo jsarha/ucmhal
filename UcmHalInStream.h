@@ -83,7 +83,12 @@ private:
 	Mutex mLock;
 	bool mStandby;
 	audio_devices_t mDevices;
-	audio_config_t mConfig;
+	
+	uclist_t::iterator mEntry;
+	
+	pcm *mPcm;
+
+	int startInputStream();
 };
 
 }; // namespace UcmHal

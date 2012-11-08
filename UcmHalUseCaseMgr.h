@@ -84,20 +84,26 @@ public:
 	~UseCaseMgr();
 
 	int loadConfiguration();
-	int findEntry(audio_mode_t mode, audio_devices_t devices,
-	              audio_output_flags_t flags, uclist_t::iterator &entry);
+	int findEntry(uclist_t::iterator &entry, audio_mode_t mode,
+	              audio_devices_t devices,
+	              audio_output_flags_t flags = AUDIO_OUTPUT_FLAG_NONE);
 	int activateEntry(const uclist_t::iterator &entry);
 	int deactivateEntry(const uclist_t::iterator &entry);
 
 	int getPlaybackCard(const uclist_t::iterator &entry);
 	int getPlaybackPort(const uclist_t::iterator &entry);
 
-	int changeStandby(const uclist_t::iterator &o,
-	                  const uclist_t::iterator &n) const;
+	int getCaptureCard(const uclist_t::iterator &entry);
+	int getCapturePort(const uclist_t::iterator &entry);
+
+	// TODO need input/output parameter
+	int changeStandby(const uclist_t::iterator &o, 
+					  const uclist_t::iterator &n) const;
 
 	int getSupportedDeivices() const { return mAllDevices; }
 	const uclist_t::const_iterator noEntry() const { return mUCList.end(); }
-
+	
+	const string &activeVerb() { return mActiveVerb; }
 private:
 	Mutex mLock;
 	string mUcmConfName;

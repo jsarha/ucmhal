@@ -75,9 +75,11 @@ public:
 	int get_render_position(uint32_t *dsp_frames) const;
 
 	audio_stream_out *audio_stream_out() { return &m_out.android_out; }
+
 	int deviceUpdatePrepare();
 	int deviceUpdateFinish();
 	void routeUpdateHook();
+
 private:
 	ucmhal_out m_out;
 	Dev &mDev;

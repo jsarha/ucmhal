@@ -73,8 +73,8 @@ int UseCaseMgr::loadConfiguration() {
 	return 0;
 }
 
-int UseCaseMgr::findEntry(audio_mode_t mode, audio_devices_t devices,
-                          audio_output_flags_t flags, uclist_t::iterator &i) {
+int UseCaseMgr::findEntry(uclist_t::iterator &i, audio_mode_t mode,
+                          audio_devices_t devices, audio_output_flags_t flags) {
 	ALOGD("mode 0x%08x dev 0x%08x flags 0x%08x", mode, devices, flags);
 
 	for (i = mUCList.begin(); i != mUCList.end(); ++i) {
@@ -94,8 +94,8 @@ int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
 		return -1;
 	}
 	AutoMutex lock(mLock);
-	if (mActiveVerb.empty() || mActiveVerb == SND_USE_CASE_VERB_INACTIVE) {
-		ALOGV("Activating verb '%s'", i->mUcmVerb.c_str());
+	if (mActiveVerb.empty()) {
+		LOGV("Activating verb '%s'", i->mUcmVerb.c_str());
 		uh_assert_se(!snd_use_case_set_verb(mucm, i->mUcmVerb.c_str()));
 		// Only enable devices when enabling a verb
 		// TODO more complere support would maintain a union of devices from
@@ -133,7 +133,7 @@ int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
 		// Last active entry, just setting verb to "Inactive" should be enough
 		ALOGV("Deactivating current verb '%s'", mActiveVerb.c_str());
 		uh_assert_se(!snd_use_case_set_verb(mucm, SND_USE_CASE_VERB_INACTIVE));
-		mActiveVerb = SND_USE_CASE_VERB_INACTIVE;
+		mActiveVerb.clear();
 	}
 	else {
 		// TODO more complete support would maintain a union of devices from
@@ -159,8 +159,19 @@ int UseCaseMgr::getPlaybackPort(const uclist_t::iterator &i) {
 	return snd_use_case_get_mod_playback_pcm(mucm, i->mUcmModifier.c_str());
 }
 
-int UseCaseMgr::changeStandby(const uclist_t::iterator &o,
-                              const uclist_t::iterator &n) const {
+int UseCaseMgr::getCaptureCard(const uclist_t::iterator &i) {
+	return mCard;
+}
+
+int UseCaseMgr::getCapturePort(const uclist_t::iterator &i) {
+	if (i->mUcmModifier.empty()) {
+		return snd_use_case_get_verb_capture_pcm(mucm);
+	}
+	return snd_use_case_get_mod_capture_pcm(mucm, i->mUcmModifier.c_str());
+}
+
+int UseCaseMgr::changeStandby(const uclist_t::iterator &o, 
+							  const uclist_t::iterator &n) const {
 	return 1;
 	/* Could be something like bellow, but let's suspend every time for now
 	   return (o.mUcmVerb != n.mUcmVerb ||
