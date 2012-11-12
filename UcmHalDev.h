@@ -72,6 +72,7 @@ public:
 	audio_hw_device *audio_hw_device() { return &m_dev.android_dev; }
 
 	void screenStateHook();
+	friend class Stream;
 	friend class OutStream;
 	friend class InStream;
 private:

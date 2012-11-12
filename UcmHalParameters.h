@@ -39,6 +39,7 @@ public:
 	~Parameters();
 
 	int update(const char *kvpairs, std::list<const char *> *changed = NULL);
+	virtual int updateTrigger(const char *kvpairs) = 0;
 	string &get(const char *key, string &value) const;
 	int get(const char *key, int &value) const;
 	void set(const char *key, const char *value);
@@ -78,7 +79,7 @@ public:
 		mHooks.erase(key);
 	}
 
-	int updateTrigger(const char *kvpairs) {
+	virtual int updateTrigger(const char *kvpairs) {
 		std::list<const char *> changed;
 		int ret = update(kvpairs, &changed);
 		for (std::list<const char *>::iterator i = changed.begin();

@@ -38,6 +38,7 @@
 #include <utility>
 
 #include "UcmHalUseCaseMgr.h"
+#include "UcmHalStream.h"
 
 namespace UcmHal {
 
@@ -50,7 +51,7 @@ struct ucmhal_in {
 	InStream *me;
 };
 
-class InStream : public audio_stream_in {
+class InStream : public Stream {
 public:
 	InStream(Dev &dev,
 	         UseCaseMgr &ucm,
@@ -59,39 +60,21 @@ public:
 	         struct audio_config *config);
 	~InStream();
 
-	uint32_t get_sample_rate() const;
-	int set_sample_rate(uint32_t rate);
 	size_t get_buffer_size() const;
-	uint32_t get_channels() const;
-	audio_format_t get_format() const;
-	int set_format(audio_format_t format);
-	int standby();
-	int dump(int fd) const;
-	int set_parameters(const char *kvpairs);
-	char * get_parameters(const char *keys) const;
-	int add_audio_effect(effect_handle_t effect) const;
-	int remove_audio_effect(effect_handle_t effect) const;
 	int set_gain(float gain);
 	ssize_t read(void* buffer, size_t bytes);
 	uint32_t get_input_frames_lost();
 
-	audio_stream_in *audio_stream_in() { return &m_in.android_in; }
+	struct audio_stream_in *audio_stream_in() { return &m_in.android_in; }
 	static int check_parameters(audio_config_t *config);
 
 	int deviceUpdatePrepare();
 	int deviceUpdateFinish();
 private:
 	ucmhal_in m_in;
-	Dev &mDev;
-	UseCaseMgr &mUcm;
-	Mutex mLock;
-	bool mStandby;
-	audio_devices_t mDevices;
 
-	uclist_t::iterator mEntry;
-
-	pcm_config mConfig;
-	pcm *mPcm;
+	static const char *supportedParameters[];
+	HookedParameters<InStream> mParameters;
 
 	int startInputStream();
 };

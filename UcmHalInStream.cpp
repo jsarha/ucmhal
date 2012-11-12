@@ -86,12 +86,19 @@ uint32_t in_get_input_frames_lost(struct audio_stream_in *stream) {
 	return ((ucmhal_in *)stream)->me->get_input_frames_lost();
 }
 
+const char *InStream::supportedParameters[] = {
+	AUDIO_PARAMETER_STREAM_INPUT_SOURCE,
+	AUDIO_PARAMETER_STREAM_ROUTING,
+	NULL
+};
+
 InStream::InStream(Dev &dev,
                    UseCaseMgr &ucm,
                    audio_io_handle_t handle,
                    audio_devices_t devices,
                    struct audio_config *config) :
-	mDev(dev), mUcm(ucm), mStandby(true), mDevices(devices) {
+	Stream(dev, ucm, &mParameters, handle, devices, config),
+	mParameters(supportedParameters) {
 	memset(&m_in, 0, sizeof(m_in));
 
 	m_in.android_in.common.get_sample_rate = in_get_sample_rate;
@@ -111,94 +118,17 @@ InStream::InStream(Dev &dev,
 	m_in.android_in.get_input_frames_lost = in_get_input_frames_lost;
 	m_in.me = this;
 
-	uh_assert_se(0 == mUcm.findEntry(mEntry, mDev.mMode, mDevices));
-
-	mConfig.channels = popcount(config->channel_mask);
 	mConfig.rate = MM_FULL_POWER_SAMPLING_RATE;
 	mConfig.period_size = SHORT_PERIOD_SIZE;
 	mConfig.period_count = CAPTURE_PERIOD_COUNT;
-	mConfig.format = PCM_FORMAT_S16_LE;
-	mConfig.start_threshold = 0;
-	mConfig.stop_threshold = 0;
-	mConfig.silence_threshold = 0;
 }
 
 InStream::~InStream() {
 }
 
-uint32_t InStream::get_sample_rate() const {
-    LOGFUNC("%s(%p)", __func__, this);
-	return mConfig.rate;
-}
-
-int InStream::set_sample_rate(uint32_t rate) {
-	LOGFUNC("%s(%p, %d)", __func__, this, rate);
-	return 0;
-}
-
 size_t InStream::get_buffer_size() const {
 	LOGFUNC("%s(%p)", __func__, this);
 	return mConfig.period_size;
-}
-
-uint32_t InStream::get_channels() const {
-    LOGFUNC("%s(%p)", __func__, this);
-    if (mConfig.channels) {
-        return AUDIO_CHANNEL_IN_MONO;
-    } else {
-        return AUDIO_CHANNEL_IN_STEREO;
-    }
-}
-
-audio_format_t InStream::get_format() const {
-    LOGFUNC("%s(%p)", __func__, this);
-	return AUDIO_FORMAT_PCM_16_BIT;
-}
-
-int InStream::set_format(audio_format_t format) {
-	LOGFUNC("%s(%p, %d)", __func__, this, format);
-	return 0;
-}
-
-int InStream::standby() {
-	LOGFUNC("%s(%p)", __func__, this);
-	// TODO Do we really need the device lock here???
-	//AutoMutex dLock(mDev.mLock);
-	AutoMutex sLock(mLock);
-	if (!mStandby) {
-		pcm_close(mPcm);
-		mPcm = NULL;
-		mUcm.deactivateEntry(mEntry);
-		mStandby = 1;
-	}
-	return 0;
-}
-
-int InStream::dump(int fd) const {
-	LOGFUNC("%s(%p, %d)", __func__, this, fd);
-	return 0;
-}
-
-int InStream::set_parameters(const char *kvpairs) {
-	LOGFUNC("%s(%p, %s)", __func__, this, kvpairs);
-	//TODO
-	return 0;
-}
-
-char * InStream::get_parameters(const char *keys) const {
-	LOGFUNC("%s(%p, %s)", __func__, this, keys);
-	//TODO
-	return 0;
-}
-
-int InStream::add_audio_effect(effect_handle_t effect) const {
-	LOGFUNC("%s(%p, %d)", __func__, this, effect);
-	return 0;
-}
-
-int InStream::remove_audio_effect(effect_handle_t effect) const {
-	LOGFUNC("%s(%p, %d)", __func__, this, effect);
-	return 0;
 }
 
 int InStream::set_gain(float gain) {

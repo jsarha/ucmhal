@@ -103,7 +103,7 @@ OutStream::OutStream(Dev &dev,
                      audio_devices_t devices,
                      audio_output_flags_t flags,
                      struct audio_config *config) :
-	mDev(dev), mUcm(ucm), mStandby(true), mDevices(devices), mFlags(flags),
+	Stream(dev, ucm, &mParameters, handle, devices, config, flags),
 	mParameters(supportedParameters) {
 	memset(&m_out, 0, sizeof(m_out));
 
@@ -129,8 +129,6 @@ OutStream::OutStream(Dev &dev,
 	mParameters.setHook(this, &OutStream::routeUpdateHook,
 	                    AUDIO_PARAMETER_STREAM_ROUTING);
 
-	uh_assert_se(0 == mUcm.findEntry(mEntry, mDev.mMode, mDevices, mFlags));
-
 	mConfig.channels = 2;
 	mConfig.rate = DEFAULT_OUT_SAMPLING_RATE;
 	mConfig.period_size = LONG_PERIOD_SIZE;
@@ -140,28 +138,16 @@ OutStream::OutStream(Dev &dev,
 	mConfig.stop_threshold = 0;
 	mConfig.silence_threshold = 0;
 
-	mFrameSize = 0;
 	mWriteMaxThreshold = 0;
 	mWriteMinThreshold = 0;
-	mPcm = NULL;
 
 	config->format = AUDIO_FORMAT_PCM_16_BIT;
 	config->channel_mask = AUDIO_CHANNEL_OUT_STEREO;
-	config->sample_rate = get_sample_rate();
+	config->sample_rate = mConfig.rate;
 }
 
 OutStream::~OutStream() {
 	standby();
-}
-
-uint32_t OutStream::get_sample_rate() const {
-	LOGFUNC("%s(%p)", __func__, this);
-	return 44100;
-}
-
-int OutStream::set_sample_rate(uint32_t rate) {
-	LOGFUNC("%s(%p, %d)", __func__, this, rate);
-	return 0;
 }
 
 size_t OutStream::get_buffer_size() const {
@@ -169,62 +155,6 @@ size_t OutStream::get_buffer_size() const {
 	/* audioflinger expects audio buffers to be a multiple of 16 frames */
 	return ((mConfig.period_size/2) & ~0xF) * audio_stream_frame_size(
 		const_cast<struct audio_stream *>(&m_out.android_out.common));
-}
-
-uint32_t OutStream::get_channels() const {
-	return AUDIO_CHANNEL_OUT_STEREO;
-}
-
-audio_format_t OutStream::get_format() const {
-	return AUDIO_FORMAT_PCM_16_BIT;
-}
-
-int OutStream::set_format(audio_format_t format) {
-	LOGFUNC("%s(%p, %d)", __func__, this, format);
-	return 0;
-}
-
-int OutStream::standby() {
-	LOGFUNC("%s(%p)", __func__, this);
-	// TODO Do we really need the device lock here???
-	//AutoMutex dLock(mDev.mLock);
-	AutoMutex sLock(mLock);
-	if (!mStandby) {
-		pcm_close(mPcm);
-		mPcm = NULL;
-		mUcm.deactivateEntry(mEntry);
-		mStandby = 1;
-	}
-	return 0;
-}
-
-int OutStream::dump(int fd) const {
-	LOGFUNC("%s(%p)", __func__, this);
-	return 0;
-}
-
-int OutStream::set_parameters(const char *kvpairs) {
-	LOGFUNC("%s(%p, %s)", __func__, this, kvpairs);
-	mParameters.updateTrigger(kvpairs);
-	return 0;
-}
-
-char * OutStream::get_parameters(const char *keys) const {
-	LOGFUNC("%s(%p, %s)", __func__, this, keys);
-	// TODO this is broken
-	return mParameters.toStr();
-}
-
-int OutStream::add_audio_effect(effect_handle_t effect) const {
-	LOGFUNC("%s(%p, %p)", __func__, this, effect);
-	//TODO
-	return 0;
-}
-
-int OutStream::remove_audio_effect(effect_handle_t effect) const {
-	LOGFUNC("%s(%p, %p)", __func__, this, effect);
-	//TODO
-	return 0;
 }
 
 uint32_t OutStream::get_latency() const {
@@ -327,31 +257,6 @@ int OutStream::startStream()
 	}
 
 	mStandby = 0;
-	return 0;
-}
-
-/* The device lock should be kept between deviceUpdatePrepare and
-   deviceUpdateFinish calls */
-int OutStream::deviceUpdatePrepare() {
-	AutoMutex lock(mLock);
-	uclist_t::iterator newEntry;
-	uh_assert_se(0 == mUcm.findEntry(newEntry, mDev.mMode, mDevices, mFlags));
-	if (mEntry->equal(*newEntry))
-		return 0;
-	if (mEntry->active()) {
-		if (!mStandby && mUcm.changeStandby(mEntry, newEntry))
-			standby();
-		else
-			mUcm.deactivateEntry(mEntry);
-	}
-	mEntry = newEntry;
-	return 0;
-}
-
-int OutStream::deviceUpdateFinish() {
-	AutoMutex lock(mLock);
-	if (!mStandby)
-		mUcm.activateEntry(mEntry);
 	return 0;
 }
 

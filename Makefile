@@ -9,6 +9,7 @@ CPPSOURCES = \
 	UcmHalDev.cpp \
 	UcmHalUseCaseMgr.cpp \
 	UcmHalMacroMap.cpp \
+	UcmHalStream.cpp \
 	UcmHalOutStream.cpp \
 	UcmHalInStream.cpp \
 	UcmHalParameters.cpp
@@ -20,6 +21,7 @@ HEADERS = \
 	UcmHalDev.h \
 	UcmHalUseCaseMgr.h \
 	UcmHalMacroMap.h \
+	UcmHalStream.h \
 	UcmHalOutStream.h \
 	UcmHalInStream.h \
 	UcmHalParameters.h \
