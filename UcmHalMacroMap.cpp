@@ -78,25 +78,78 @@ MacroMap::MacroMap() {
 	MACRO_MAP(mModeMacroMap, AUDIO_MODE_IN_COMMUNICATION);
 	MACRO_MAP(mModeMacroMap, AUDIO_MODE_CNT);
 	MACRO_MAP(mModeMacroMap, AUDIO_MODE_MAX);
+
+	// Fill flag macro map
+	MACRO_MAP(mFlagMacroMap, AUDIO_OUTPUT_FLAG_NONE);
+	MACRO_MAP(mFlagMacroMap, AUDIO_OUTPUT_FLAG_DIRECT);
+	MACRO_MAP(mFlagMacroMap, AUDIO_OUTPUT_FLAG_PRIMARY);
+	MACRO_MAP(mFlagMacroMap, AUDIO_OUTPUT_FLAG_FAST);
+	MACRO_MAP(mFlagMacroMap, AUDIO_OUTPUT_FLAG_DEEP_BUFFER);
 }
 
 MacroMap::~MacroMap() {
 }
 
-int MacroMap::device(const char *name) {
-	MacroMap_t::iterator i = mDeviceMacroMap.find(name);
-	if (i != mDeviceMacroMap.end())
-		return i->second;
-	ALOGE("%s not found from macromap", name);
-	return 0;
+int MacroMap::toInt(MacroMap_t &map, const char *name, int &out) {
+	MacroMap_t::iterator i = map.find(name);
+	if (i != map.end()) {
+		out = i->second;
+		return 0;
+	}
+	return -1;
 }
 
 int MacroMap::mode(const char *name)  {
-	MacroMap_t::iterator i = mModeMacroMap.find(name);
-	if (i != mModeMacroMap.end())
-		return i->second;
-	ALOGE("%s not found from macromap", name);
-	return 0;
+	int out = 0;
+	if (toInt(mModeMacroMap, name, out))
+		ALOGE("%s not found from mode macromap", name);
+	return out;
+}
+
+int MacroMap::device(const char *name) {
+	int out = 0;
+	if (toInt(mDeviceMacroMap, name, out))
+		ALOGE("%s not found from device macromap", name);
+	return out;
+}
+
+int MacroMap::flag(const char *name)  {
+	int out = 0;
+	if (toInt(mFlagMacroMap, name, out))
+		ALOGE("%s not found from flags macromap", name);
+	return out;
+}
+
+int MacroMap::toStr(MacroMap_t &map, int val, string &out) {
+	MacroMap_t::iterator i = map.begin();
+	bool begin = true;
+	int count;
+	for (;i != map.end(); i++) {
+		if (i->second & val) {
+			if (begin)
+				begin = false;
+			else
+				out.append("|");
+			out.append(i->first);
+			count++;
+		}
+	}
+	return count;
+}
+
+const char *MacroMap::modeStr(int mode, string &str) {
+	toStr(mModeMacroMap, mode, str);
+	return str.c_str();
+}
+
+const char *MacroMap::deviceStr(int mode, string &str) {
+	toStr(mDeviceMacroMap, mode, str);
+	return str.c_str();
+}
+
+const char *MacroMap::flagStr(int mode, string &str) {
+	toStr(mFlagMacroMap, mode, str);
+	return str.c_str();
 }
 
 }; // namespace UcmHal

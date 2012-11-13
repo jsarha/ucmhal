@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#include "UcmHalTypes.h"
+
+#include <typeinfo>
+
 #include "UcmHalDev.h"
 #include "UcmHalStream.h"
 #include "UcmHalMacro.h"
@@ -121,6 +125,19 @@ int Stream::remove_audio_effect(effect_handle_t effect) const {
 	return 0;
 }
 
+const string &Stream::dbgStr() {
+	if (mDbgStr.empty()) {
+		mDbgStr.append(typeid(*this).name());
+		mDbgStr.append(" devices: ");
+		mDev.mMM.deviceStr(mDevices, mDbgStr);
+		if (mFlags) {
+			mDbgStr.append(" flags : ");
+			mDev.mMM.flagStr(mFlags, mDbgStr);
+		}
+	}
+	return mDbgStr;
+}
+
 /* The device lock should be kept between deviceUpdatePrepare and
    deviceUpdateFinish calls */
 int Stream::deviceUpdatePrepare() {
@@ -142,7 +159,7 @@ int Stream::deviceUpdatePrepare() {
 int Stream::deviceUpdateFinish() {
 	AutoMutex lock(mLock);
 	if (!mStandby)
-		mUcm.activateEntry(mEntry);
+		mUcm.activateEntry(mEntry, this);
 	return 0;
 }
 

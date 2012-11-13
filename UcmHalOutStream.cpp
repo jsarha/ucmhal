@@ -230,7 +230,7 @@ int OutStream::startStream()
 	LOGFUNC("%s(%p)", __func__, this);
 
 	assert(mEntry != mUcm.noEntry());
-	mUcm.activateEntry(mEntry);
+	mUcm.activateEntry(mEntry, this);
 	int card = mUcm.getPlaybackCard(mEntry);
 	int port = mUcm.getPlaybackPort(mEntry);
 
@@ -268,6 +268,7 @@ void OutStream::routeUpdateHook() {
 	if (mDevices != newDevices && newDevices != -1) {
 		ALOGD("Devices changed from 0x%08x to 0x%08x", mDevices, newDevices);
 		mDevices = (audio_devices_t) newDevices;
+		mDbgStr.clear();
 		deviceUpdatePrepare();
 		deviceUpdateFinish();
 	}

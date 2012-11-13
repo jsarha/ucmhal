@@ -68,8 +68,6 @@ public:
 	struct audio_stream_in *audio_stream_in() { return &m_in.android_in; }
 	static int check_parameters(audio_config_t *config);
 
-	int deviceUpdatePrepare();
-	int deviceUpdateFinish();
 private:
 	ucmhal_in m_in;
 

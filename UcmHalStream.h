@@ -41,6 +41,7 @@ namespace UcmHal {
 
 class Dev;
 class UseCaseMgr;
+class Parameters;
 
 class Stream {
 public:
@@ -67,6 +68,7 @@ public:
 	virtual int remove_audio_effect(effect_handle_t effect) const;
 
 	const uclist_t::iterator &getUcmEntry() { return mEntry; }
+	const string &dbgStr();
 
 	virtual int deviceUpdatePrepare();
 	virtual int deviceUpdateFinish();
@@ -84,6 +86,8 @@ protected:
 	pcm_config mConfig;
 	int mFrameSize;
 	pcm *mPcm;
+
+	string mDbgStr;
 };
 
 }; // namespace UcmHal

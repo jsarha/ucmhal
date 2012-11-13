@@ -37,28 +37,34 @@
 
 namespace UcmHal {
 
+class Stream;
+
 class UseCaseMapEntry {
 public:
-	UseCaseMapEntry() : mMode(0), mDevices(0), mDevicesMask(0), mActive(0) {}
-	int match(const int mode, const int devices) {
+	UseCaseMapEntry() : mMode(0), mDevices(0), mDevicesMask(0),
+	                    mFlags(0), mFlagsMask(0), mActive(NULL) {}
+	int match(const int mode, const int devices, const int flags) {
 		return (mode == mMode &&
-		        (mDevices & mDevicesMask) == (devices & mDevicesMask));
+		        (mDevices & mDevicesMask) == (devices & mDevicesMask) &&
+		        (mFlags & mFlagsMask) == (flags & mFlagsMask));
 	}
 	const string &dump();
+	Stream *active() { return mActive; }
 	int equal(UseCaseMapEntry &o) const {
 		return (mUcmVerb == o.mUcmVerb && mUcmDevice == o.mUcmDevice &&
 		        mUcmModifier == o.mUcmModifier);
 	}
-	bool active() { return mActive; }
 	friend class UseCaseMgr;
 private:
 	int mMode;
 	int mDevices;
 	int mDevicesMask;
+	int mFlags;
+	int mFlagsMask;
 	string mUcmVerb;
 	string mUcmDevice;
 	string mUcmModifier;
-	bool mActive;
+	Stream *mActive;
 	string mDump;
 };
 
@@ -87,7 +93,7 @@ public:
 	int findEntry(uclist_t::iterator &entry, audio_mode_t mode,
 	              audio_devices_t devices,
 	              audio_output_flags_t flags = AUDIO_OUTPUT_FLAG_NONE);
-	int activateEntry(const uclist_t::iterator &entry);
+	int activateEntry(const uclist_t::iterator &entry, Stream *activator);
 	int deactivateEntry(const uclist_t::iterator &entry);
 
 	int getPlaybackCard(const uclist_t::iterator &entry);
@@ -97,12 +103,12 @@ public:
 	int getCapturePort(const uclist_t::iterator &entry);
 
 	// TODO need input/output parameter
-	int changeStandby(const uclist_t::iterator &o, 
+	int changeStandby(const uclist_t::iterator &o,
 					  const uclist_t::iterator &n) const;
 
 	int getSupportedDeivices() const { return mAllDevices; }
 	const uclist_t::const_iterator noEntry() const { return mUCList.end(); }
-	
+
 	const string &activeVerb() { return mActiveVerb; }
 private:
 	Mutex mLock;

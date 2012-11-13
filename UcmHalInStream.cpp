@@ -166,7 +166,7 @@ ssize_t InStream::read(void* buffer, size_t bytes) {
 int InStream::startInputStream() {
     LOGFUNC("%s(%p)", __func__, this);
 
-    mUcm.activateEntry(mEntry);
+    mUcm.activateEntry(mEntry, this);
     int card = mUcm.getCaptureCard(mEntry);
     int port = mUcm.getCapturePort(mEntry);
 
@@ -187,31 +187,6 @@ int InStream::startInputStream() {
 uint32_t InStream::get_input_frames_lost() {
     LOGFUNC("%s(%p)", __func__, this);
 	//TODO
-	return 0;
-}
-
-/* The device lock should be kept between deviceUpdatePrepare and
-   deviceUpdateFinish calls */
-int InStream::deviceUpdatePrepare() {
-	AutoMutex lock(mLock);
-	uclist_t::iterator newEntry;
-	uh_assert_se(mUcm.findEntry(newEntry, mDev.mMode, mDevices));
-	if (mEntry->equal(*newEntry))
-		return 0;
-	if (mEntry->active()) {
-		if (!mStandby && mUcm.changeStandby(mEntry, newEntry))
-			standby();
-		else
-			mUcm.deactivateEntry(mEntry);
-	}
-	mEntry = newEntry;
-	return 0;
-}
-
-int InStream::deviceUpdateFinish() {
-	AutoMutex lock(mLock);
-	if (!mStandby)
-		mUcm.activateEntry(mEntry);
 	return 0;
 }
 

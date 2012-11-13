@@ -40,13 +40,21 @@ public:
 		}
 	};
 
-	int device(const char *name);
 	int mode(const char *name);
+	int device(const char *name);
+	int flag(const char *name);
 
+	const char *modeStr(int mode, string &str);
+	const char *deviceStr(int dev, string &str);
+	const char *flagStr(int flags, string &str);
 private:
 	typedef std::map<const char *, int, ltstr> MacroMap_t;
 	MacroMap_t mDeviceMacroMap;
 	MacroMap_t mModeMacroMap;
+	MacroMap_t mFlagMacroMap;
+
+	int toInt(MacroMap_t &map, const char *name, int &out);
+	int toStr(MacroMap_t &map, int val, string &out);
 };
 
 }; // namespace UcmHal

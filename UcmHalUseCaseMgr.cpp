@@ -26,6 +26,7 @@
 
 #include "UcmHalUseCaseMgr.h"
 #include "UcmHalMacro.h"
+#include "UcmHalStream.h"
 
 #include "alsa-control.h"
 
@@ -37,9 +38,10 @@ const string &UseCaseMapEntry::dump() {
 
 	char buf[1024];
 	snprintf(buf, sizeof(buf),
-	         "mode %d devices 0x%08x mask 0x%08x -> verb '%s' dev '%s' mod '%s'",
-	         mMode, mDevices, mDevicesMask, mUcmVerb.c_str(),
-	         mUcmDevice.c_str(), mUcmModifier.c_str());
+	         "mode %d devices 0x%08x mask 0x%08x flags 0x%08x mask 0x%08x ->"
+	         " verb '%s' dev '%s' mod '%s'",
+	         mMode, mDevices, mDevicesMask, mFlags, mFlagsMask,
+	         mUcmVerb.c_str(), mUcmDevice.c_str(), mUcmModifier.c_str());
 
 	mDump = buf;
 
@@ -75,22 +77,24 @@ int UseCaseMgr::loadConfiguration() {
 
 int UseCaseMgr::findEntry(uclist_t::iterator &i, audio_mode_t mode,
                           audio_devices_t devices, audio_output_flags_t flags) {
-	ALOGD("mode 0x%08x dev 0x%08x flags 0x%08x", mode, devices, flags);
+	ALOGD("mode %d dev 0x%08x flags 0x%08x", mode, devices, flags);
 
 	for (i = mUCList.begin(); i != mUCList.end(); ++i) {
-		if (i->match(mode, devices)) {
+		if (i->match(mode, devices, flags)) {
 			ALOGD("Found: %s (active: %d)", i->dump().c_str(), i->mActive);
 			return 0;
 		}
 	}
+	ALOGE("No matching mapping entry found.");
 	return -1;
 }
 
-int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
+int UseCaseMgr::activateEntry(const uclist_t::iterator &i, Stream *activator) {
 	ALOGE("%s(%s)", __func__, i->dump().c_str());
 	uh_assert(i != noEntry());
 	if (i->mActive) {
-		ALOGE("Entry %s already active", i->dump().c_str());
+		ALOGE("Entry %s already active by %s", i->dump().c_str(),
+		      i->mActive->dbgStr().c_str());
 		return -1;
 	}
 	AutoMutex lock(mLock);
@@ -116,7 +120,7 @@ int UseCaseMgr::activateEntry(const uclist_t::iterator &i) {
 
 	mActiveUseCaseCount++;
 	mActiveVerb = i->mUcmVerb;
-	i->mActive = 1;
+	i->mActive = activator;
 	return 0;
 }
 
@@ -170,7 +174,7 @@ int UseCaseMgr::getCapturePort(const uclist_t::iterator &i) {
 	return snd_use_case_get_mod_capture_pcm(mucm, i->mUcmModifier.c_str());
 }
 
-int UseCaseMgr::changeStandby(const uclist_t::iterator &o, 
+int UseCaseMgr::changeStandby(const uclist_t::iterator &o,
 							  const uclist_t::iterator &n) const {
 	return 1;
 	/* Could be something like bellow, but let's suspend every time for now
@@ -218,6 +222,7 @@ int UseCaseMgr::loadUseCaseMap(const char *file) {
 		return 1;
 	}
 
+	// TODO this is very error prone... possible NULL pointer everywhere
 	for (e = e->FirstChildElement("row"); e ;e = e->NextSiblingElement("row")) {
 		TiXmlElement *in, *out, *t, *flag;
 		const char* text;
@@ -242,6 +247,23 @@ int UseCaseMgr::loadUseCaseMap(const char *file) {
 		for (flag = t->FirstChildElement("flag"); flag;
 		     flag = flag->NextSiblingElement("flag")) {
 			entry.mDevicesMask |= mMM.device(flag->GetText());
+		}
+
+		// Get flags if they are there
+		entry.mFlags = 0;
+		entry.mFlagsMask = 0;
+		t = in->FirstChildElement("flags");
+		if (t) {
+			for (flag = t->FirstChildElement("flag"); flag;
+			     flag = flag->NextSiblingElement("flag")) {
+				entry.mFlags |= mMM.flag(flag->GetText());
+			}
+
+			t = in->FirstChildElement("flags_mask");
+			for (flag = t->FirstChildElement("flag"); flag;
+			     flag = flag->NextSiblingElement("flag")) {
+				entry.mFlagsMask |= mMM.device(flag->GetText());
+			}
 		}
 
 		/* Outputs */
