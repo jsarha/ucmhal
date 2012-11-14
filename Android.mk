@@ -34,6 +34,7 @@ LOCAL_SRC_FILES := \
 	UcmHalDev.cpp \
 	UcmHalUseCaseMgr.cpp \
 	UcmHalMacroMap.cpp \
+	UcmHalStream.cpp \
 	UcmHalOutStream.cpp \
 	UcmHalInStream.cpp \
 	UcmHalParameters.cpp
