@@ -64,16 +64,23 @@ private:
 	string mUcmVerb;
 	string mUcmDevice;
 	string mUcmModifier;
-	Stream *mActive;
 	string mDump;
+	Stream *mActive;
 };
 
 typedef std::list<UseCaseMapEntry> uclist_t;
+struct aucsetcmp {
+	bool operator()(const uclist_t::iterator &a, const uclist_t::iterator &b) const {
+		return &(*a) > &(*b);
+	}
+};
+typedef std::set<uclist_t::iterator, aucsetcmp> aucset_t;
 
 /* TODO for optimization fill to below map as the matches are found
    struct usecase_map_key {
    int mode;
    int devices;
+   int flags;
    }
    struct usecase_map_key_cmp {
    bool operator()(const usecase_map_key &a,
@@ -121,6 +128,10 @@ private:
 	string mActiveVerb;
 
 	uclist_t mUCList;
+	aucset_t mActiveUCSet;
+
+	int disableDevice(string &device);
+	int enableDevice(string &device);
 
 	int loadUseCaseMap(const char*);
 };

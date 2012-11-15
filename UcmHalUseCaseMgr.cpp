@@ -89,50 +89,93 @@ int UseCaseMgr::findEntry(uclist_t::iterator &i, audio_mode_t mode,
 	return -1;
 }
 
-int UseCaseMgr::activateEntry(const uclist_t::iterator &i, Stream *activator) {
-	ALOGE("%s(%s)", __func__, i->dump().c_str());
-	uh_assert(i != noEntry());
-	if (i->mActive) {
-		ALOGE("Entry %s already active by %s", i->dump().c_str(),
-		      i->mActive->dbgStr().c_str());
+int UseCaseMgr::enableDevice(string &device) {
+	ALOGV("Activating device '%s' if needed", device.c_str());
+#ifdef UCMHAL_CHECK_INTEGRITY
+	bool activate = true;
+	for (auclist_t::iterator i = mActiveUCList.begin();
+		 i != mActiveUCList.end(); i++) {
+		if (device == (*i)->mUcmDevice) {
+			activate = false;
+			break;
+		}
+	}
+	if (activate) {
+		uh_assert(!snd_use_case_get_device_status(mucm, device.c_str()));
+		uh_assert_se(!snd_use_case_enable_device(mucm, device.c_str()));
+	}
+#else
+	if (!snd_use_case_get_device_status(mucm, device.c_str())) {
+		uh_assert_se(!snd_use_case_enable_device(mucm, device.c_str()));
+		return 1;
+	}
+#endif
+	return 0;
+}
+
+int UseCaseMgr::activateEntry(const uclist_t::iterator &uc, Stream *activator) {
+	ALOGE("%s(%s)", __func__, uc->dump().c_str());
+	uh_assert(uc != noEntry());
+	if (uc->mActive) {
+		ALOGE("Entry %s already active by %s", uc->dump().c_str(),
+		      uc->mActive->dbgStr().c_str());
 		return -1;
 	}
 	AutoMutex lock(mLock);
 	if (mActiveVerb.empty()) {
-		LOGV("Activating verb '%s'", i->mUcmVerb.c_str());
-		uh_assert_se(!snd_use_case_set_verb(mucm, i->mUcmVerb.c_str()));
-		// Only enable devices when enabling a verb
-		// TODO more complere support would maintain a union of devices from
-		//		active usecases.
-		ALOGV("Activating device '%s'", i->mUcmDevice.c_str());
-		uh_assert_se(!snd_use_case_enable_device(mucm, i->mUcmDevice.c_str()));
+		LOGV("Activating verb '%s'", uc->mUcmVerb.c_str());
+		uh_assert_se(!snd_use_case_set_verb(mucm, uc->mUcmVerb.c_str()));
+		mActiveVerb = uc->mUcmVerb;
 	}
-	else if (mActiveVerb != i->mUcmVerb) {
+	else if (mActiveVerb != uc->mUcmVerb) {
 		ALOGE("Request for conflicting verb '%s' current '%s'",
-		      i->mUcmVerb.c_str(), mActiveVerb.c_str());
+		      uc->mUcmVerb.c_str(), mActiveVerb.c_str());
 		return -1;
 	}
-
-	if (!i->mUcmModifier.empty()) {
-		ALOGV("Activating modifier '%s'", i->mUcmModifier.c_str());
-		uh_assert_se(!snd_use_case_enable_modifier(mucm, i->mUcmModifier.c_str()));
+	if (!uc->mUcmDevice.empty()) {
+		enableDevice(uc->mUcmDevice);
+	}
+	if (!uc->mUcmModifier.empty()) {
+		// TODO check that this modifier is not already active
+		ALOGV("Activating modifier '%s'", uc->mUcmModifier.c_str());
+		uh_assert_se(!snd_use_case_enable_modifier(mucm, uc->mUcmModifier.c_str()));
 	}
 
 	mActiveUseCaseCount++;
-	mActiveVerb = i->mUcmVerb;
-	i->mActive = activator;
+	mActiveUCSet.insert(uc);
+	uh_assert(mActiveUseCaseCount == (int)mActiveUCSet.size());
+	uc->mActive = activator;
 	return 0;
 }
 
-int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
-	ALOGE("%s(%s)", __func__, i->dump().c_str());
-	if (!i->mActive) {
-		ALOGE("Entry %s already inactive", i->dump().c_str());
+int UseCaseMgr::disableDevice(string &device) {
+	ALOGV("Deactivating device '%s' if needed", device.c_str());
+	bool deactivate = true;
+	for (aucset_t::iterator i = mActiveUCSet.begin();
+		 i != mActiveUCSet.end(); i++) {
+		if (device == (*i)->mUcmDevice) {
+			deactivate = false;
+		}
+	}
+	if (deactivate) {
+		uh_assert(1 == snd_use_case_get_device_status(mucm, device.c_str()));
+		uh_assert_se(!snd_use_case_disable_device(mucm, device.c_str()));
+		return 1;
+	}
+	return 0;
+}
+
+int UseCaseMgr::deactivateEntry(const uclist_t::iterator &uc) {
+	ALOGE("%s(%s)", __func__, uc->dump().c_str());
+	if (!uc->mActive) {
+		ALOGE("Entry %s already inactive", uc->dump().c_str());
 		return -1;
 	}
 	AutoMutex lock(mLock);
+	uc->mActive = NULL;
 	mActiveUseCaseCount--;
-	uh_assert(mActiveUseCaseCount >= 0);
+	mActiveUCSet.erase(uc);
+	uh_assert(mActiveUseCaseCount == (int)mActiveUCSet.size());
 	if (mActiveUseCaseCount == 0) {
 		// Last active entry, just setting verb to "Inactive" should be enough
 		ALOGV("Deactivating current verb '%s'", mActiveVerb.c_str());
@@ -140,15 +183,16 @@ int UseCaseMgr::deactivateEntry(const uclist_t::iterator &i) {
 		mActiveVerb.clear();
 	}
 	else {
-		// TODO more complete support would maintain a union of devices from
-		//		active usecases.
-		if (!i->mUcmModifier.empty()) {
-			ALOGV("Deactivating modifier '%s'", i->mUcmModifier.c_str());
+		if (!uc->mUcmDevice.empty()) {
+			disableDevice(uc->mUcmDevice);
+		}
+		if (!uc->mUcmModifier.empty()) {
+			ALOGV("Deactivating modifier '%s'", uc->mUcmModifier.c_str());
 			uh_assert_se(
-				!snd_use_case_disable_modifier(mucm, i->mUcmModifier.c_str()));
+				!snd_use_case_disable_modifier(mucm, uc->mUcmModifier.c_str()));
 		}
 	}
-	i->mActive = 0;
+	uc->mActive = NULL;
 	return 0;
 }
 
