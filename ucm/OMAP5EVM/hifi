@@ -6,15 +6,15 @@ SectionVerb
 	EnableSequence
 		'DL1 PDM Switch':1:1
   		'DL1 PDM_DL2 Switch':1:1
-		'DL1 Mixer Multimedia':1:1
+		'DL1 Mixer Tones':1:1
 		'Sidetone Mixer Playback':1:1
-		'DL1 Media Playback Volume':1:120
+		'DL1 Tones Playback Volume':1:120
 	EndSequence
 
 	DisableSequence
-		'DL1 Media Playback Volume':1:0
+		'DL1 Tones Playback Volume':1:0
 		'Sidetone Mixer Playback':1:0
-		'DL1 Mixer Multimedia':1:0
+		'DL1 Mixer Tones':1:0
 		'DL1 PDM Switch':1:0
   		'DL1 PDM_DL2 Switch':1:0
 	EndSequence
@@ -22,7 +22,7 @@ SectionVerb
 	# QoS and ALSA PCMs
 	QoS HiFi
 	CapturePCM 1
-	PlaybackPCM 0
+	PlaybackPCM 3
 
 EndSection
 
@@ -145,39 +145,24 @@ EndSection
 
 # Handsfree Tone playback
 SectionModifier
-	Name "Play Tone"
+	Name "DeepBuffers"
 	Comment "Play tone to handsfree during music playback"
-	SupportedDevice "Handsfree"
-
-	EnableSequence
-		'DL1 Mixer Tones':1:1
-        'DL1 Tones Playback Volume':1:120
-	EndSequence
-
-	DisableSequence
-		'DL1 Mixer Tones':1:0
-	EndSequence
-
-	PlaybackPCM 3
-	MasterPlaybackVolume 'DL1 Tones Playback Volume'
-EndSection
-
-# Headset Tone playback
-SectionModifier
-	Name "Play Tone"
-	Comment "Play tone to headset and handsfree during music playback"
+	SupportedDevice "Earphone"
 	SupportedDevice "Headset"
+	SupportedDevice "Handsfree"
+	SupportedDevice "HeadsetMic"
+	SupportedDevice "MainMic"
 
 	EnableSequence
-		'DL1 Mixer Tones':1:1
-		'DL1 Tones Playback Volume':1:10
+		'DL1 Mixer Multimedia':1:1
+		'DL1 Media Playback Volume':1:120
 	EndSequence
 
 	DisableSequence
-		'DL1 Tones Playback Volume':1:0
-		'DL1 Mixer Tones':1:0
+		'DL1 Mixer Multimedia':1:0
 	EndSequence
 
-	PlaybackPCM 3
-	MasterPlaybackVolume 'DL1 Tones Playback Volume'
+	PlaybackPCM 0
+	MasterPlaybackVolume 'DL1 Multimedia Playback Volume'
 EndSection
+

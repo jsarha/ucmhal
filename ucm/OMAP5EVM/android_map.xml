@@ -7,6 +7,48 @@
 	<audio_mode>AUDIO_MODE_NORMAL</audio_mode>
 	<devices><flag>AUDIO_DEVICE_OUT_EARPIECE</flag></devices>
 	<devices_mask><flag>AUDIO_DEVICE_OUT_EARPIECE</flag></devices_mask>
+	<flags><flag>AUDIO_OUTPUT_FLAG_DEEP_BUFFER</flag></flags>
+	<flags_mask><flag>AUDIO_OUTPUT_FLAG_DEEP_BUFFER</flag></flags_mask>
+      </input>
+      <output>
+	<verb>HiFi</verb>
+	<device>Earphone</device>
+	<modifier>DeepBuffers</modifier>
+      </output>
+    </row>
+    <row>
+      <input>
+	<audio_mode>AUDIO_MODE_NORMAL</audio_mode>
+	<devices><flag>AUDIO_DEVICE_OUT_SPEAKER</flag></devices>
+	<devices_mask><flag>AUDIO_DEVICE_OUT_SPEAKER</flag></devices_mask>
+	<flags><flag>AUDIO_OUTPUT_FLAG_DEEP_BUFFER</flag></flags>
+	<flags_mask><flag>AUDIO_OUTPUT_FLAG_DEEP_BUFFER</flag></flags_mask>
+      </input>
+      <output>
+	<verb>HiFi</verb>
+	<device>Handsfree</device>
+	<modifier>DeepBuffers</modifier>
+      </output>
+    </row>
+    <row>
+      <input>
+	<audio_mode>AUDIO_MODE_NORMAL</audio_mode>
+	<devices><flag>AUDIO_DEVICE_OUT_WIRED_HEADSET</flag></devices>
+	<devices_mask><flag>AUDIO_DEVICE_OUT_WIRED_HEADSET</flag></devices_mask>
+	<flags><flag>AUDIO_OUTPUT_FLAG_DEEP_BUFFER</flag></flags>
+	<flags_mask><flag>AUDIO_OUTPUT_FLAG_DEEP_BUFFER</flag></flags_mask>
+      </input>
+      <output>
+	<verb>HiFi</verb>
+	<device>Headset</device>
+	<modifier>DeepBuffers</modifier>
+      </output>
+    </row>
+    <row>
+      <input>
+	<audio_mode>AUDIO_MODE_NORMAL</audio_mode>
+	<devices><flag>AUDIO_DEVICE_OUT_EARPIECE</flag></devices>
+	<devices_mask><flag>AUDIO_DEVICE_OUT_EARPIECE</flag></devices_mask>
       </input>
       <output>
 	<verb>HiFi</verb>

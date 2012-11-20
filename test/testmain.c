@@ -64,7 +64,8 @@ int main(int argc, char *argv[]) {
 		fgets(getsbuf, sizeof(getsbuf), stdin);
 
 		if ((ret = adev->open_output_stream(
-				 adev, handle, AUDIO_DEVICE_OUT_WIRED_HEADSET, flags, &config_out, &stream_out_hs))) {
+				 adev, handle, AUDIO_DEVICE_OUT_WIRED_HEADSET, AUDIO_OUTPUT_FLAG_DEEP_BUFFER, 
+				 &config_out, &stream_out_hs))) {
 			fprintf(stderr, "open_output_stream returned %d \n", ret);
 			return -1;
 		}
