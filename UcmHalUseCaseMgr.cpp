@@ -306,7 +306,7 @@ int UseCaseMgr::loadUseCaseMap(const char *file) {
 			t = in->FirstChildElement("flags_mask");
 			for (flag = t->FirstChildElement("flag"); flag;
 			     flag = flag->NextSiblingElement("flag")) {
-				entry.mFlagsMask |= mMM.device(flag->GetText());
+				entry.mFlagsMask |= mMM.flag(flag->GetText());
 			}
 		}
 
