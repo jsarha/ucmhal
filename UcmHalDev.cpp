@@ -266,12 +266,6 @@ int Dev::open_input_stream(audio_io_handle_t handle,
                            audio_devices_t devices,
                            struct audio_config *config,
                            struct audio_stream_in **stream_in) {
-	if (InStream::check_parameters(config)) {
-		ALOGE("open_input_stream: Invalid input parameters (%dHz,%dch,0x%08x)",
-		      config->sample_rate, popcount(config->channel_mask),
-		      config->format);
-		return -EINVAL;
-	}
 	AutoMutex lock(mLock);
 	InStream *in = new InStream(*this, mUcm, handle, devices, config);
 	if (!in)

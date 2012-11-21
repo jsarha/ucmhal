@@ -118,9 +118,17 @@ InStream::InStream(Dev &dev,
 	m_in.android_in.get_input_frames_lost = in_get_input_frames_lost;
 	m_in.me = this;
 
+	mParameters.set(AUDIO_PARAMETER_STREAM_ROUTING, devices);
+	mParameters.setHook(this, &InStream::routeUpdateHook,
+	                    AUDIO_PARAMETER_STREAM_ROUTING);
+
 	mConfig.rate = MM_FULL_POWER_SAMPLING_RATE;
 	mConfig.period_size = SHORT_PERIOD_SIZE;
 	mConfig.period_count = CAPTURE_PERIOD_COUNT;
+
+	config->format = AUDIO_FORMAT_PCM_16_BIT;
+	config->channel_mask = AUDIO_CHANNEL_IN_STEREO;
+	config->sample_rate = mConfig.rate;
 }
 
 InStream::~InStream() {
@@ -190,39 +198,20 @@ uint32_t InStream::get_input_frames_lost() {
 	return 0;
 }
 
-int InStream::check_parameters(audio_config_t *config)
-{
-	uh_assert(config);
-
-	if (config->format != AUDIO_FORMAT_PCM_16_BIT) {
-		return -EINVAL;
+void InStream::routeUpdateHook() {
+	AutoMutex dLock(mDev.mLock);
+	AutoMutex sLock(mLock);
+	int newDevices = -1;
+	mParameters.get(AUDIO_PARAMETER_STREAM_ROUTING, newDevices);
+	if (mDevices != newDevices && newDevices != -1) {
+		ALOGD("Devices changed from 0x%08x to 0x%08x", mDevices, newDevices);
+		mDevices = (audio_devices_t) newDevices;
+		mDbgStr.clear();
+		deviceUpdatePrepare();
+		deviceUpdateFinish();
 	}
-
-	/* This does not look right to me
-	int channel_count = popcount(config->channel_mask);
-	if ((channel_count < 1) || (channel_count > 2)) {
-		return -EINVAL;
-	}
-	*/
-	if (config->channel_mask != AUDIO_CHANNEL_IN_MONO &&
-	    config->channel_mask != AUDIO_CHANNEL_IN_STEREO)
-		return -EINVAL;
-
-	switch(config->sample_rate) {
-	case 8000:
-	case 11025:
-	case 16000:
-	case 22050:
-	case 24000:
-	case 32000:
-	case 44100:
-	case 48000:
-		break;
-	default:
-		return -EINVAL;
-	}
-
-	return 0;
+	else
+		ALOGE("Bogus device update 0x%08x", newDevices);
 }
 
 }; // namespace UcmHal
