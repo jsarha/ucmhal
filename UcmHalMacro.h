@@ -24,10 +24,19 @@
 #define LOGFUNC(...) (ALOGV(__VA_ARGS__))
 #endif
 
-#define uh_assert_se(x) do {	  \
-		if (!(x)) \
+#define uh_return_failure_if(x) do {						\
+		if ((x)) {											\
+			ALOGE("Expression '%s' failed in %s at %s:%d",	\
+				  #x, __func__, __FILE__, __LINE__);		\
+			return -1;										\
+		}													\
+	} while(0)
+
+
+#define uh_assert_se(x) do {							  \
+		if (!(x))										  \
 			ALOGE("Assertion '%s' in %s failed at %s:%d", \
-			      #x, __func__, __FILE__, __LINE__); \
+			      #x, __func__, __FILE__, __LINE__);	  \
 	} while(0)
 
 #define uh_assert(x) uh_assert_se(x)

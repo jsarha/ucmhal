@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <string.h>
+#include <stdio.h>
 
 #ifndef NO_ANDROID_STL
 #define _STLP_HAS_INCLUDE_NEXT  1
@@ -70,6 +71,18 @@ private:
 };
 
 typedef std::string string;
+inline void appendInt(string &str, int i) {
+	char buf[21];
+	snprintf(buf, sizeof(buf), "%d", i);
+	buf[sizeof(buf)-1] = '\0';
+	str += buf;
+}
+
+struct stringcmp {
+	bool operator()(const string &a, const string &b) const {
+		return a > b;
+	}
+};
 
 struct strcomp {
 	bool operator()(const char *a, const char *b) const {
@@ -77,6 +90,12 @@ struct strcomp {
 	}
 	bool operator()(const char *&a, const char *&b) const {
 		return 0 > ::strcmp(a, b);
+	}
+};
+
+struct intcmp {
+	bool operator()(int a, int b) const {
+		return a > b;
 	}
 };
 

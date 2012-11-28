@@ -129,21 +129,7 @@ OutStream::OutStream(Dev &dev,
 	mParameters.setHook(this, &OutStream::routeUpdateHook,
 	                    AUDIO_PARAMETER_STREAM_ROUTING);
 
-	mConfig.channels = 2;
-	mConfig.rate = DEFAULT_OUT_SAMPLING_RATE;
-	mConfig.period_size = LONG_PERIOD_SIZE;
-	mConfig.period_count = PLAYBACK_PERIOD_COUNT;
-	mConfig.format = PCM_FORMAT_S16_LE;
-	mConfig.start_threshold = 0;
-	mConfig.stop_threshold = 0;
-	mConfig.silence_threshold = 0;
-
-	mWriteMaxThreshold = 0;
-	mWriteMinThreshold = 0;
-
-	config->format = AUDIO_FORMAT_PCM_16_BIT;
-	config->channel_mask = AUDIO_CHANNEL_OUT_STEREO;
-	config->sample_rate = mConfig.rate;
+	initPcmConfig(mEntry->mOutSettings, config);
 }
 
 OutStream::~OutStream() {
@@ -155,6 +141,15 @@ size_t OutStream::get_buffer_size() const {
 	/* audioflinger expects audio buffers to be a multiple of 16 frames */
 	return ((mConfig.period_size/2) & ~0xF) * audio_stream_frame_size(
 		const_cast<struct audio_stream *>(&m_out.android_out.common));
+}
+
+uint32_t OutStream::get_channels() const {
+    LOGFUNC("%s(%p)", __func__, this);
+    if (mConfig.channels == 1) {
+        return AUDIO_CHANNEL_OUT_MONO;
+    } else {
+        return AUDIO_CHANNEL_OUT_STEREO;
+    }
 }
 
 uint32_t OutStream::get_latency() const {
@@ -180,15 +175,15 @@ ssize_t OutStream::write(const void* buffer, size_t bytes) {
 			if (startStream())
 				return -EBUSY;
 
-		/* If we have more than mWriteMaxThreshold frames in DMA buffer we go
-		   to sleep until we have mWriteMinThreshold of frames left in buffer.
+		/* If we have more than mMaxThreshold frames in DMA buffer we go
+		   to sleep until we have mMinThreshold of frames left in buffer.
 		*/
 		struct timespec time_stamp;
 		unsigned int frames_free;
 		if (pcm_get_htimestamp(mPcm, &frames_free, &time_stamp) >= 0) {
 			int frames_to_play = pcm_get_buffer_size(mPcm) - frames_free;
-			if (frames_to_play > mWriteMaxThreshold) {
-				useconds_t time = (((int64_t)(frames_to_play - mWriteMinThreshold)
+			if (frames_to_play > mMaxThreshold) {
+				useconds_t time = (((int64_t)(frames_to_play - mMinThreshold)
 				                    * 1000000) / mConfig.rate);
 				if (time > MIN_WRITE_SLEEP_US)
 					usleep(time);
@@ -201,7 +196,7 @@ ssize_t OutStream::write(const void* buffer, size_t bytes) {
 			ALOGE("XRUN detected");
 			pcm_close(mPcm);
 			mPcm = NULL;
-			mStandby = 0;
+			mStandby = 1;
 		}
 	} while(ret == -EPIPE);
 
@@ -236,20 +231,18 @@ int OutStream::startStream()
 
 	ALOGE("setting playback card=%d port=%d", card, port);
 
-	/* default to low power:
-	 *	NOTE: PCM_NOIRQ mode is required to dynamically scale avail_min
-	 */
-	mFrameSize = audio_stream_frame_size(&m_out.android_out.common);
-	mWriteMaxThreshold = mConfig.period_size * (mConfig.period_count - 1);
-	mWriteMinThreshold = mConfig.period_size;
-	mConfig.start_threshold = mConfig.period_size;
-	// TODO avail_min is not available in my testenvironment
-	// mConfig.avail_min = LONG_PERIOD_SIZE,
-
 	mPcm = pcm_open(card, port, PCM_OUT | PCM_MMAP, &mConfig);
 
 	if (!pcm_is_ready(mPcm)) {
 		ALOGE("cannot open pcm_out driver: %s", pcm_get_error(mPcm));
+		LOGD("parameters: .channels = %d .rate = %d .period_size = %d "
+			 ".period_count = %d .format = %d .start_threshold = %d "
+			 ".stop_threshold = %d .silence_threshold = %d .avail_min = %d",
+			 mConfig.channels, mConfig.rate, mConfig.period_size,
+			 mConfig.period_count, mConfig.format, mConfig.start_threshold,
+			 mConfig.stop_threshold, mConfig.silence_threshold,
+			 mConfig.avail_min);
+
 		pcm_close(mPcm);
 		mPcm = NULL;
 		mUcm.deactivateEntry(mEntry);

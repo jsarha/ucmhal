@@ -59,12 +59,16 @@ public:
 	~OutStream();
 
 	virtual size_t get_buffer_size() const;
+	virtual uint32_t get_channels() const;
 	uint32_t get_latency() const;
 	int set_volume(float left, float right);
 	ssize_t write(const void* buffer, size_t bytes);
 	int get_render_position(uint32_t *dsp_frames) const;
 
-	struct audio_stream_out *audio_stream_out() { return &m_out.android_out; }
+	struct audio_stream_out *audio_stream_out() { return &m_out.android_out; }	
+	virtual struct audio_stream *audio_stream() { 
+		return &m_out.android_out.common; 
+	}
 
 	void routeUpdateHook();
 
@@ -73,9 +77,6 @@ private:
 
 	static const char *supportedParameters[];
 	HookedParameters<OutStream> mParameters;
-
-	int mWriteMaxThreshold;
-	int mWriteMinThreshold;
 
 	int startStream();
 };

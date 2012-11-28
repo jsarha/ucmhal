@@ -60,12 +60,16 @@ public:
 	         struct audio_config *config);
 	~InStream();
 
-	size_t get_buffer_size() const;
+	virtual size_t get_buffer_size() const;
+	virtual uint32_t get_channels() const;
 	int set_gain(float gain);
 	ssize_t read(void* buffer, size_t bytes);
 	uint32_t get_input_frames_lost();
 
 	struct audio_stream_in *audio_stream_in() { return &m_in.android_in; }
+	virtual struct audio_stream *audio_stream() { 
+		return &m_in.android_in.common; 
+	}
 
 	void routeUpdateHook();
 

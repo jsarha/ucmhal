@@ -57,7 +57,7 @@ public:
 	virtual uint32_t get_sample_rate() const;
 	virtual int set_sample_rate(uint32_t rate);
 	virtual size_t get_buffer_size() const;
-	virtual uint32_t get_channels() const;
+	virtual uint32_t get_channels() const = 0;
 	virtual audio_format_t get_format() const;
 	virtual int set_format(audio_format_t format);
 	virtual int standby();
@@ -70,8 +70,10 @@ public:
 	const uclist_t::iterator &getUcmEntry() { return mEntry; }
 	const string &dbgStr();
 
+	virtual struct audio_stream *audio_stream() = 0;
 	virtual int deviceUpdatePrepare();
 	virtual int deviceUpdateFinish();
+
 protected:
 	Dev &mDev;
 	UseCaseMgr &mUcm;
@@ -85,9 +87,14 @@ protected:
 
 	pcm_config mConfig;
 	int mFrameSize;
+	int mMinThreshold;
+	int mMaxThreshold;
 	pcm *mPcm;
 
 	string mDbgStr;
+
+	void initPcmConfig(UseCaseMapEntry::pcm_settings pcm_settings,
+					   struct audio_config *config);
 };
 
 }; // namespace UcmHal

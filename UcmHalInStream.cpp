@@ -122,13 +122,7 @@ InStream::InStream(Dev &dev,
 	mParameters.setHook(this, &InStream::routeUpdateHook,
 	                    AUDIO_PARAMETER_STREAM_ROUTING);
 
-	mConfig.rate = MM_FULL_POWER_SAMPLING_RATE;
-	mConfig.period_size = SHORT_PERIOD_SIZE;
-	mConfig.period_count = CAPTURE_PERIOD_COUNT;
-
-	config->format = AUDIO_FORMAT_PCM_16_BIT;
-	config->channel_mask = AUDIO_CHANNEL_IN_STEREO;
-	config->sample_rate = mConfig.rate;
+	initPcmConfig(mEntry->mInSettings, config);
 }
 
 InStream::~InStream() {
@@ -137,6 +131,16 @@ InStream::~InStream() {
 size_t InStream::get_buffer_size() const {
 	LOGFUNC("%s(%p)", __func__, this);
 	return mConfig.period_size;
+}
+
+
+uint32_t InStream::get_channels() const {
+    LOGFUNC("%s(%p)", __func__, this);
+    if (mConfig.channels == 1) {
+        return AUDIO_CHANNEL_IN_MONO;
+    } else {
+        return AUDIO_CHANNEL_IN_STEREO;
+    }
 }
 
 int InStream::set_gain(float gain) {

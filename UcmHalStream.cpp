@@ -25,6 +25,62 @@
 
 namespace UcmHal {
 
+void Stream::initPcmConfig(UseCaseMapEntry::pcm_settings pcm_settings,
+						   struct audio_config *config) {
+	memset(&mConfig, 0, sizeof(mConfig));
+	if (pcm_settings.channel_counts.find(popcount(config->channel_mask)) ==
+		pcm_settings.channel_counts.end()) {
+		LOGV("Requested channel count %d not found, using default %d",
+			 popcount(config->channel_mask), pcm_settings.default_channels);
+		mConfig.channels = pcm_settings.default_channels;
+	}
+	else {
+		LOGV("Requested channel count %d found", popcount(config->channel_mask));
+		mConfig.channels = popcount(config->channel_mask);
+	}
+
+	if (pcm_settings.rates.find(config->sample_rate) ==
+		pcm_settings.rates.end()) {
+		LOGV("Requested rate %d not found, using default %d",
+			 config->sample_rate, pcm_settings.default_rate);
+		mConfig.rate = pcm_settings.default_rate;
+	}
+	else {
+		LOGV("Requested rate %d found", config->sample_rate);
+		mConfig.rate = config->sample_rate;
+	}
+
+
+	LOGD("pcm config req: channels %d rate %d got: channels %d rate %d",
+		 popcount(config->channel_mask), config->sample_rate,
+		 mConfig.channels, mConfig.rate);
+
+	mConfig.period_size = pcm_settings.period_size;
+	mConfig.period_count = pcm_settings.period_count;
+	mConfig.format = PCM_FORMAT_S16_LE;
+	mConfig.start_threshold = pcm_settings.period_size;
+	mConfig.stop_threshold = 0;
+	mConfig.silence_threshold = 0;
+	mConfig.avail_min = pcm_settings.min_threshold;
+
+	LOGD("parameters: .channels = %d .rate = %d .period_size = %d "
+		 ".period_count = %d .format = %d .start_threshold = %d "
+		 ".stop_threshold = %d .silence_threshold = %d .avail_min = %d",
+		 mConfig.channels, mConfig.rate, mConfig.period_size,
+		 mConfig.period_count, mConfig.format, mConfig.start_threshold,
+		 mConfig.stop_threshold, mConfig.silence_threshold,
+		 mConfig.avail_min);
+
+	mMinThreshold = pcm_settings.min_threshold;
+	mMaxThreshold = pcm_settings.max_threshold;
+
+	config->channel_mask = get_channels();
+	config->sample_rate = get_sample_rate();
+	config->format = get_format();
+
+	mFrameSize = audio_stream_frame_size(audio_stream());
+}
+
 Stream::Stream(Dev &dev,
                UseCaseMgr &ucm,
                Parameters *parameters,
@@ -36,15 +92,6 @@ Stream::Stream(Dev &dev,
 	mDevices(devices), mFlags(flags), mFrameSize(0), mPcm(NULL) {
 
 	uh_assert_se(0 == mUcm.findEntry(mEntry, mDev.mMode, mDevices, mFlags));
-	// These are only defaults
-	mConfig.channels = popcount(config->channel_mask);
-	mConfig.rate = config->sample_rate;
-	mConfig.period_size = 0;
-	mConfig.period_count = 0;
-	mConfig.format = PCM_FORMAT_S16_LE;
-	mConfig.start_threshold = 0;
-	mConfig.stop_threshold = 0;
-	mConfig.silence_threshold = 0;
 }
 
 Stream::~Stream() {
@@ -63,15 +110,6 @@ int Stream::set_sample_rate(uint32_t rate) {
 uint32_t Stream::get_buffer_size() const {
 	LOGFUNC("%s(%p)", __func__, this);
 	return mConfig.period_size;
-}
-
-uint32_t Stream::get_channels() const {
-    LOGFUNC("%s(%p)", __func__, this);
-    if (mConfig.channels == 1) {
-        return AUDIO_CHANNEL_IN_MONO;
-    } else {
-        return AUDIO_CHANNEL_IN_STEREO;
-    }
 }
 
 audio_format_t Stream::get_format() const {
