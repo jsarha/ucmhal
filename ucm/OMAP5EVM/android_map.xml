@@ -1,6 +1,23 @@
 <?xml version='1.0' encoding='utf-8'?>
 <android_use_case_map>
   <ucm_conf_name>OMAP5EVM</ucm_conf_name>
+  <output_default>
+    <verb>HiFi</verb>
+    <in_pcm_settings>
+      <rate><list>48000</list></rate>
+      <channel_count><list>2</list></channel_count>
+      <period_size>1920</period_size>
+      <period_count>4</period_count>
+    </in_pcm_settings>
+    <out_pcm_settings>
+      <rate><list>44100</list><list>48000</list></rate>
+      <channel_count><list>2</list></channel_count>
+      <period_size>1920</period_size>
+      <period_count>4</period_count>
+      <min_threshold>1920</min_threshold>
+      <max_threshold>5760</max_threshold>
+    </out_pcm_settings>
+  </output_default>
   <use_case_table>
     <row>
       <input>
